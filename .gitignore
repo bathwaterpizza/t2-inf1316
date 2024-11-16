@@ -1,0 +1,28 @@
+# Ignore all
+*
+
+# Don't ignore files with extensions
+!*.*
+
+# Don't ignore directories
+!*/
+
+# Don't ignore Makefile
+!Makefile
+
+# Ignore all executables
+*.[eE][xX][eE]
+*.out
+*.o
+*.bin
+*.app
+
+# Ignore .log files
+*.log
+
+# Ignore Visual Studio Code configuration files and folders
+.vscode/
+*.code-workspace
+
+# Ignore pagelists
+pagelist_P*.txt
