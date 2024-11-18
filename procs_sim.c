@@ -1,4 +1,5 @@
 #include "types.h"
+#include "util.h"
 #include <assert.h>
 #include <fcntl.h>
 #include <semaphore.h>
@@ -8,6 +9,7 @@
 #include <unistd.h>
 
 int main(void) {
+  dmsg("procs_sim started");
   int pipe_P1[2], pipe_P2[2], pipe_P3[2], pipe_P4[2];
 
   // retrieve args from environment variables
@@ -63,10 +65,36 @@ int main(void) {
   }
 
   // open pagelist files containing the memory io requests
+  FILE *pagelist_P1 = fopen(PAGELIST_P1_FILE, "r");
+  if (pagelist_P1 == NULL) {
+    perror("File error");
+    exit(6);
+  }
+  FILE *pagelist_P2 = fopen(PAGELIST_P2_FILE, "r");
+  if (pagelist_P2 == NULL) {
+    perror("File error");
+    exit(6);
+  }
+  FILE *pagelist_P3 = fopen(PAGELIST_P3_FILE, "r");
+  if (pagelist_P3 == NULL) {
+    perror("File error");
+    exit(6);
+  }
+  FILE *pagelist_P4 = fopen(PAGELIST_P4_FILE, "r");
+  if (pagelist_P4 == NULL) {
+    perror("File error");
+    exit(6);
+  }
 
   // main loop, wait for sem and send memory io request through pipes
   for (int i = 0; i < num_rounds; i++) {
-    // code
+    sem_wait(sem_P1);
+
+    sem_wait(sem_P2);
+
+    sem_wait(sem_P3);
+
+    sem_wait(sem_P4);
   }
 
   // cleanup
@@ -78,6 +106,8 @@ int main(void) {
   close(pipe_P2[PIPE_WRITE]);
   close(pipe_P3[PIPE_WRITE]);
   close(pipe_P4[PIPE_WRITE]);
+
+  dmsg("procs_sim finished");
 
   return 0;
 }

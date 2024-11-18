@@ -1,3 +1,4 @@
+#include "types.h"
 #include <assert.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -5,6 +6,7 @@
 
 #define MAX_PAGES 32
 
+// writes a filename with num_lines of: <00-(MAX_PAGES-1) page> <R/W operation>
 void write_pagelist(const char *filename, int num_lines) {
   FILE *file = fopen(filename, "w");
   if (file == NULL) {
@@ -34,10 +36,10 @@ int main(int argc, char **argv) {
 
   srand(time(NULL));
 
-  write_pagelist("pagelist_P1.txt", num_lines);
-  write_pagelist("pagelist_P2.txt", num_lines);
-  write_pagelist("pagelist_P3.txt", num_lines);
-  write_pagelist("pagelist_P4.txt", num_lines);
+  write_pagelist(PAGELIST_P1_FILE, num_lines);
+  write_pagelist(PAGELIST_P2_FILE, num_lines);
+  write_pagelist(PAGELIST_P3_FILE, num_lines);
+  write_pagelist(PAGELIST_P4_FILE, num_lines);
 
   printf("Finished\n");
 

@@ -10,6 +10,11 @@
 #define SEM_P3_NAME "/sem_P3"
 #define SEM_P4_NAME "/sem_P4"
 
+#define PAGELIST_P1_FILE "pagelist_P1.txt"
+#define PAGELIST_P2_FILE "pagelist_P2.txt"
+#define PAGELIST_P3_FILE "pagelist_P3.txt"
+#define PAGELIST_P4_FILE "pagelist_P4.txt"
+
 typedef enum {
   ALGO_NRU,  // Not Recently Used
   ALGO_2ndC, // Second Chance
