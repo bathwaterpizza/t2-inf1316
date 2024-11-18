@@ -1,4 +1,5 @@
 #include "types.h"
+#include <assert.h>
 #include <fcntl.h>
 #include <semaphore.h>
 #include <stdio.h>
@@ -29,6 +30,7 @@ int main(void) {
   pipe_P3[PIPE_WRITE] = atoi(pipe_P3_write_str);
   pipe_P4[PIPE_READ] = atoi(pipe_P4_read_str);
   pipe_P4[PIPE_WRITE] = atoi(pipe_P4_write_str);
+  assert(num_rounds > 0);
 
   // close pipe reads, as we will only be writing here
   close(pipe_P1[PIPE_READ]);
