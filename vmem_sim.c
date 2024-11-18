@@ -156,6 +156,45 @@ int main(int argc, char **argv) {
 
     // Process 1
     sem_post(sem_P1);
+
+    if (read(pipe_P1[PIPE_READ], &req, sizeof(req)) == -1) {
+      perror("Pipe read error");
+      exit(9);
+    }
+
+    dmsg("vmem_sim got P1: %d %c", req.proc_page_id, req.operation);
+
+    // Process 2
+    sem_post(sem_P2);
+
+    if (read(pipe_P2[PIPE_READ], &req, sizeof(req)) == -1) {
+      perror("Pipe read error");
+      exit(9);
+    }
+
+    dmsg("vmem_sim got P2: %d %c", req.proc_page_id, req.operation);
+
+    // Process 3
+    sem_post(sem_P3);
+
+    if (read(pipe_P3[PIPE_READ], &req, sizeof(req)) == -1) {
+      perror("Pipe read error");
+      exit(9);
+    }
+
+    dmsg("vmem_sim got P3: %d %c", req.proc_page_id, req.operation);
+
+    // Process 1
+    sem_post(sem_P4);
+
+    if (read(pipe_P4[PIPE_READ], &req, sizeof(req)) == -1) {
+      perror("Pipe read error");
+      exit(9);
+    }
+
+    dmsg("vmem_sim got P4: %d %c", req.proc_page_id, req.operation);
+
+    dmsg("vmem_sim finished round %d", i);
   }
 
   // TODO: print results
