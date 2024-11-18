@@ -4,8 +4,6 @@
 #include <stdlib.h>
 #include <time.h>
 
-#define MAX_PAGES 32
-
 // writes a filename with num_lines of: <00-(MAX_PAGES-1) page> <R/W operation>
 void write_pagelist(const char *filename, int num_lines) {
   FILE *file = fopen(filename, "w");
@@ -15,7 +13,7 @@ void write_pagelist(const char *filename, int num_lines) {
   }
 
   for (int i = 0; i < num_lines; i++) {
-    int page = rand() % MAX_PAGES;
+    int page = rand() % PROC_MAX_PAGES;
     char operation = (rand() % 2) ? 'R' : 'W';
     fprintf(file, "%02d %c\n", page, operation);
   }

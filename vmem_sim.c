@@ -149,7 +149,10 @@ int main(int argc, char **argv) {
 
   // main loop, read memory io requests from processes
   for (int i = 0; i < num_rounds; i++) {
-    // code
+    vmem_io_request_t req;
+
+    // Process 1
+    sem_post(sem_P1);
   }
 
   // cleanup

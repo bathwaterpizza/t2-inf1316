@@ -14,6 +14,7 @@
 #define PAGELIST_P2_FILE "pagelist_P2.txt"
 #define PAGELIST_P3_FILE "pagelist_P3.txt"
 #define PAGELIST_P4_FILE "pagelist_P4.txt"
+#define PROC_MAX_PAGES 32
 
 typedef enum {
   ALGO_NRU,  // Not Recently Used
