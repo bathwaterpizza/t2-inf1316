@@ -1,5 +1,7 @@
 #pragma once
 
+#define DEBUG
+
 #define PIPE_READ 0
 #define PIPE_WRITE 1
 
@@ -14,3 +16,8 @@ typedef enum {
   ALGO_LRU,  // Least Recently Used
   ALGO_WS    // Working Set (takes k param)
 } page_algo_t;
+
+typedef struct {
+  int proc_page_id; // 0-31 page id within the process' memory
+  char operation;   // 'R' or 'W' for read or write
+} vmem_io_request_t;

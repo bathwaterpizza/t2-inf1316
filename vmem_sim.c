@@ -149,8 +149,6 @@ int main(int argc, char **argv) {
 
   // main loop, read memory io requests from processes
   for (int i = 0; i < num_rounds; i++) {
-    int request_P1, request_P2, request_P3, request_P4;
-
     // code
   }
 
