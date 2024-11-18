@@ -76,11 +76,6 @@ int main(int argc, char **argv) {
     exit(1);
   }
 
-  close(pipe_P1[PIPE_WRITE]);
-  close(pipe_P2[PIPE_WRITE]);
-  close(pipe_P3[PIPE_WRITE]);
-  close(pipe_P4[PIPE_WRITE]);
-
   // create a semaphore for each process, to sync requests from processes
   sem_t *sem_P1, *sem_P2, *sem_P3, *sem_P4;
 
@@ -112,6 +107,52 @@ int main(int argc, char **argv) {
   }
 
   // spawn processes (P1, P2, P3, P4) simulator
+  pid_t procs_pid = fork();
+  if (procs_pid < 0) {
+    perror("Fork error");
+    exit(5);
+  } else if (procs_pid == 0) {
+    // child
+
+    // using environment variables to pass pipe fds and num rounds
+    char pipe_P1_read_str[12], pipe_P1_write_str[12], pipe_P2_read_str[12],
+        pipe_P2_write_str[12], pipe_P3_read_str[12], pipe_P3_write_str[12],
+        pipe_P4_read_str[12], pipe_P4_write_str[12], num_rounds_str[12];
+    sprintf(pipe_P1_read_str, "%d", pipe_P1[PIPE_READ]);
+    sprintf(pipe_P1_write_str, "%d", pipe_P1[PIPE_WRITE]);
+    sprintf(pipe_P2_read_str, "%d", pipe_P2[PIPE_READ]);
+    sprintf(pipe_P2_write_str, "%d", pipe_P2[PIPE_WRITE]);
+    sprintf(pipe_P3_read_str, "%d", pipe_P3[PIPE_READ]);
+    sprintf(pipe_P3_write_str, "%d", pipe_P3[PIPE_WRITE]);
+    sprintf(pipe_P4_read_str, "%d", pipe_P4[PIPE_READ]);
+    sprintf(pipe_P4_write_str, "%d", pipe_P4[PIPE_WRITE]);
+    sprintf(num_rounds_str, "%d", num_rounds);
+
+    setenv("PIPE_P1_READ", pipe_P1_read_str, 1);
+    setenv("PIPE_P1_WRITE", pipe_P1_write_str, 1);
+    setenv("PIPE_P2_READ", pipe_P2_read_str, 1);
+    setenv("PIPE_P2_WRITE", pipe_P2_write_str, 1);
+    setenv("PIPE_P3_READ", pipe_P3_read_str, 1);
+    setenv("PIPE_P3_WRITE", pipe_P3_write_str, 1);
+    setenv("PIPE_P4_READ", pipe_P4_read_str, 1);
+    setenv("PIPE_P4_WRITE", pipe_P4_write_str, 1);
+    setenv("NUM_ROUNDS", num_rounds_str, 1);
+
+    execl("./procs_sim", "procs_sim", NULL);
+  }
+
+  // close pipe writes, as we will only be reading here
+  close(pipe_P1[PIPE_WRITE]);
+  close(pipe_P2[PIPE_WRITE]);
+  close(pipe_P3[PIPE_WRITE]);
+  close(pipe_P4[PIPE_WRITE]);
+
+  // main loop, read memory io requests from processes
+  for (int i = 0; i < num_rounds; i++) {
+    int request_P1, request_P2, request_P3, request_P4;
+
+    // code
+  }
 
   // cleanup
   close(pipe_P1[PIPE_READ]);
@@ -126,6 +167,15 @@ int main(int argc, char **argv) {
   sem_unlink(SEM_P2_NAME);
   sem_unlink(SEM_P3_NAME);
   sem_unlink(SEM_P4_NAME);
+  unsetenv("PIPE_P1_READ");
+  unsetenv("PIPE_P1_WRITE");
+  unsetenv("PIPE_P2_READ");
+  unsetenv("PIPE_P2_WRITE");
+  unsetenv("PIPE_P3_READ");
+  unsetenv("PIPE_P3_WRITE");
+  unsetenv("PIPE_P4_READ");
+  unsetenv("PIPE_P4_WRITE");
+  unsetenv("NUM_ROUNDS");
 
   return 0;
 }
