@@ -15,13 +15,13 @@ typedef void (*page_algo_func_t)(int, int *);
 static int k_param;
 
 int main(int argc, char **argv) {
+  dmsg("vmem_sim started");
+
   // parse command line args
   if (!(argc == 3 || argc == 4)) {
     fprintf(stderr, "Usage: ./vmem_sim <num rounds> <page algo> [<k param>]\n");
     exit(3);
   }
-
-  dmsg("vmem_sim started");
 
   page_algo_t algorithm;
   page_algo_func_t page_algo_func;
@@ -161,8 +161,10 @@ int main(int argc, char **argv) {
       perror("Pipe read error");
       exit(9);
     }
+    assert(req.proc_page_id >= 0 && req.proc_page_id < PROC_MAX_PAGES);
+    assert(req.operation == 'R' || req.operation == 'W');
 
-    dmsg("vmem_sim got P1: %d %c", req.proc_page_id, req.operation);
+    dmsg("vmem_sim got P1: %02d %c", req.proc_page_id, req.operation);
 
     // Process 2
     sem_post(sem_P2);
@@ -171,8 +173,10 @@ int main(int argc, char **argv) {
       perror("Pipe read error");
       exit(9);
     }
+    assert(req.proc_page_id >= 0 && req.proc_page_id < PROC_MAX_PAGES);
+    assert(req.operation == 'R' || req.operation == 'W');
 
-    dmsg("vmem_sim got P2: %d %c", req.proc_page_id, req.operation);
+    dmsg("vmem_sim got P2: %02d %c", req.proc_page_id, req.operation);
 
     // Process 3
     sem_post(sem_P3);
@@ -181,8 +185,10 @@ int main(int argc, char **argv) {
       perror("Pipe read error");
       exit(9);
     }
+    assert(req.proc_page_id >= 0 && req.proc_page_id < PROC_MAX_PAGES);
+    assert(req.operation == 'R' || req.operation == 'W');
 
-    dmsg("vmem_sim got P3: %d %c", req.proc_page_id, req.operation);
+    dmsg("vmem_sim got P3: %02d %c", req.proc_page_id, req.operation);
 
     // Process 1
     sem_post(sem_P4);
@@ -191,8 +197,10 @@ int main(int argc, char **argv) {
       perror("Pipe read error");
       exit(9);
     }
+    assert(req.proc_page_id >= 0 && req.proc_page_id < PROC_MAX_PAGES);
+    assert(req.operation == 'R' || req.operation == 'W');
 
-    dmsg("vmem_sim got P4: %d %c", req.proc_page_id, req.operation);
+    dmsg("vmem_sim got P4: %02d %c", req.proc_page_id, req.operation);
 
     dmsg("vmem_sim finished round %d", i);
   }

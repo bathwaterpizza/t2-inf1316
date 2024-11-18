@@ -104,7 +104,7 @@ int main(void) {
       exit(8);
     }
 
-    dmsg("procs_sim sent P1: %d %c", req.proc_page_id, req.operation);
+    dmsg("procs_sim sent P1: %02d %c", req.proc_page_id, req.operation);
 
     // Process 2
     sem_wait(sem_P2);
@@ -119,7 +119,7 @@ int main(void) {
       perror("Pipe write error");
       exit(8);
     }
-    dmsg("procs_sim sent P2: %d %c", req.proc_page_id, req.operation);
+    dmsg("procs_sim sent P2: %02d %c", req.proc_page_id, req.operation);
 
     // Process 3
     sem_wait(sem_P3);
@@ -135,7 +135,7 @@ int main(void) {
       exit(8);
     }
 
-    dmsg("procs_sim sent P3: %d %c", req.proc_page_id, req.operation);
+    dmsg("procs_sim sent P3: %02d %c", req.proc_page_id, req.operation);
 
     // Process 4
     sem_wait(sem_P4);
@@ -151,7 +151,7 @@ int main(void) {
       exit(8);
     }
 
-    dmsg("procs_sim sent P4: %d %c", req.proc_page_id, req.operation);
+    dmsg("procs_sim sent P4: %02d %c", req.proc_page_id, req.operation);
 
     dmsg("procs_sim finished round %d", i);
   }
