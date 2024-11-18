@@ -1,4 +1,5 @@
 #include "types.h"
+#include "util.h"
 #include <assert.h>
 #include <fcntl.h>
 #include <semaphore.h>
@@ -19,6 +20,8 @@ int main(int argc, char **argv) {
     fprintf(stderr, "Usage: ./vmem_sim <num rounds> <page algo> [<k param>]\n");
     exit(3);
   }
+
+  dmsg("vmem_sim started");
 
   page_algo_t algorithm;
   page_algo_func_t page_algo_func;
@@ -147,13 +150,15 @@ int main(int argc, char **argv) {
   close(pipe_P3[PIPE_WRITE]);
   close(pipe_P4[PIPE_WRITE]);
 
-  // main loop, read memory io requests from processes
+  // main loop, post sem and read memory io requests from processes' pipes
   for (int i = 0; i < num_rounds; i++) {
     vmem_io_request_t req;
 
     // Process 1
     sem_post(sem_P1);
   }
+
+  // TODO: print results
 
   // cleanup
   close(pipe_P1[PIPE_READ]);
@@ -177,6 +182,8 @@ int main(int argc, char **argv) {
   unsetenv("PIPE_P4_READ");
   unsetenv("PIPE_P4_WRITE");
   unsetenv("NUM_ROUNDS");
+
+  dmsg("vmem_sim finished");
 
   return 0;
 }
