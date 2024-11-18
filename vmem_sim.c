@@ -34,7 +34,7 @@ int main(int argc, char **argv) {
     // set k parameter for working set
     k_param = atoi(argv[3]);
     assert(k_param > 0);
-    assert(k_param <= 16); // can't be greater than the simulated ram size
+    assert(k_param <= RAM_MAX_PAGES);
   }
 
   // parse selected paging algorithm
@@ -166,6 +166,8 @@ int main(int argc, char **argv) {
 
     dmsg("vmem_sim got P1: %02d %c", req.proc_page_id, req.operation);
 
+    // code
+
     // Process 2
     sem_post(sem_P2);
 
@@ -177,6 +179,8 @@ int main(int argc, char **argv) {
     assert(req.operation == 'R' || req.operation == 'W');
 
     dmsg("vmem_sim got P2: %02d %c", req.proc_page_id, req.operation);
+
+    // code
 
     // Process 3
     sem_post(sem_P3);
@@ -190,6 +194,8 @@ int main(int argc, char **argv) {
 
     dmsg("vmem_sim got P3: %02d %c", req.proc_page_id, req.operation);
 
+    // code
+
     // Process 1
     sem_post(sem_P4);
 
@@ -201,6 +207,8 @@ int main(int argc, char **argv) {
     assert(req.operation == 'R' || req.operation == 'W');
 
     dmsg("vmem_sim got P4: %02d %c", req.proc_page_id, req.operation);
+
+    // code
 
     dmsg("vmem_sim finished round %d", i);
   }

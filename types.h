@@ -18,8 +18,10 @@
 #define PAGELIST_P2_FILE "pagelist_P2.txt"
 #define PAGELIST_P3_FILE "pagelist_P3.txt"
 #define PAGELIST_P4_FILE "pagelist_P4.txt"
-// amount of pages each process' memory has
+// amount of pages each process' virtual memory has
 #define PROC_MAX_PAGES 32
+// amount of pages the simulated physical memory has
+#define RAM_MAX_PAGES 16
 
 // used to identify the algorithm being used in this execution
 typedef enum {
