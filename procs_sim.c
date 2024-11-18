@@ -88,13 +88,64 @@ int main(void) {
 
   // main loop, wait for sem and send memory io request through pipes
   for (int i = 0; i < num_rounds; i++) {
+    vmem_io_request_t req;
+
+    // Process 1
     sem_wait(sem_P1);
 
+    if (fscanf(pagelist_P1, "%d %c", &req.proc_page_id, &req.operation) != 2) {
+      fprintf(stderr, "Error reading pagelist_P1\n");
+      exit(7);
+    }
+    if (write(pipe_P1[PIPE_WRITE], &req, sizeof(req)) == -1) {
+      perror("Pipe write error");
+      exit(8);
+    }
+
+    dmsg("procs_sim sent P1");
+
+    // Process 2
     sem_wait(sem_P2);
 
+    if (fscanf(pagelist_P2, "%d %c", &req.proc_page_id, &req.operation) != 2) {
+      fprintf(stderr, "Error reading pagelist_P2\n");
+      exit(7);
+    }
+    if (write(pipe_P2[PIPE_WRITE], &req, sizeof(req)) == -1) {
+      perror("Pipe write error");
+      exit(8);
+    }
+    dmsg("procs_sim sent P2");
+
+    // Process 3
     sem_wait(sem_P3);
 
+    if (fscanf(pagelist_P3, "%d %c", &req.proc_page_id, &req.operation) != 2) {
+      fprintf(stderr, "Error reading pagelist_P3\n");
+      exit(7);
+    }
+    if (write(pipe_P3[PIPE_WRITE], &req, sizeof(req)) == -1) {
+      perror("Pipe write error");
+      exit(8);
+    }
+
+    dmsg("procs_sim sent P3");
+
+    // Process 4
     sem_wait(sem_P4);
+
+    if (fscanf(pagelist_P4, "%d %c", &req.proc_page_id, &req.operation) != 2) {
+      fprintf(stderr, "Error reading pagelist_P4\n");
+      exit(7);
+    }
+    if (write(pipe_P4[PIPE_WRITE], &req, sizeof(req)) == -1) {
+      perror("Pipe write error");
+      exit(8);
+    }
+
+    dmsg("procs_sim sent P4");
+
+    dmsg("procs_sim finished round %d", i);
   }
 
   // cleanup
@@ -106,6 +157,10 @@ int main(void) {
   close(pipe_P2[PIPE_WRITE]);
   close(pipe_P3[PIPE_WRITE]);
   close(pipe_P4[PIPE_WRITE]);
+  fclose(pagelist_P1);
+  fclose(pagelist_P2);
+  fclose(pagelist_P3);
+  fclose(pagelist_P4);
 
   dmsg("procs_sim finished");
 
