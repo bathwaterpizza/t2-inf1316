@@ -1,3 +1,4 @@
+#include <assert.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <time.h>
@@ -29,6 +30,7 @@ int main(int argc, char **argv) {
   }
 
   int num_lines = atoi(argv[1]);
+  assert(num_lines > 0);
 
   srand(time(NULL));
 

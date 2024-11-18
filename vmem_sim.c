@@ -1,16 +1,17 @@
 #include "types.h"
+#include <assert.h>
 #include <fcntl.h>
 #include <semaphore.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <string.h>
+#include <strings.h>
 #include <unistd.h>
-
-// working set window parameter
-static int k_param;
 
 // TODO: function pointer for selected paging algorithm
 typedef void (*page_algo_func_t)(int, int *);
+
+// working set window parameter
+static int k_param;
 
 int main(int argc, char **argv) {
   // parse command line args
@@ -20,12 +21,17 @@ int main(int argc, char **argv) {
   }
 
   page_algo_t algorithm;
-  page_algo_func_t page_func;
+  page_algo_func_t page_algo_func;
+  // one round represents one memory io request from each process,
+  // so four requests total
   const int num_rounds = atoi(argv[1]);
+  assert(num_rounds > 0);
 
   if (argc == 4) {
     // set k parameter for working set
     k_param = atoi(argv[3]);
+    assert(k_param > 0);
+    assert(k_param <= 16); // can't be greater than the simulated ram size
   }
 
   // parse selected paging algorithm
@@ -70,7 +76,6 @@ int main(int argc, char **argv) {
     exit(1);
   }
 
-  // close pipe writes
   close(pipe_P1[PIPE_WRITE]);
   close(pipe_P2[PIPE_WRITE]);
   close(pipe_P3[PIPE_WRITE]);
