@@ -9,6 +9,10 @@
 #include <strings.h>
 #include <unistd.h>
 
+// selected page replacement algorithm
+static page_algo_t algorithm;
+// function pointer to the selected page replacement algorithm
+static page_algo_func_t page_algo_func;
 // working set window parameter
 static int k_param;
 // page frames available in main memory.
@@ -23,26 +27,77 @@ static page_table_entry_t page_table_P4[PROC_MAX_PAGES];
 
 // clears the reference bits in each process' page table
 static inline void clear_ref_bits(void) {
-  for (int index = 0; index < PROC_MAX_PAGES; index++) {
-    page_table_P1[index].flags &= ~PAGE_REFERENCED_BIT;
-    page_table_P2[index].flags &= ~PAGE_REFERENCED_BIT;
-    page_table_P3[index].flags &= ~PAGE_REFERENCED_BIT;
-    page_table_P4[index].flags &= ~PAGE_REFERENCED_BIT;
+  for (int _index1 = 0; _index1 < PROC_MAX_PAGES; _index1++) {
+    page_table_P1[_index1].flags &= ~PAGE_REFERENCED_BIT;
+    page_table_P2[_index1].flags &= ~PAGE_REFERENCED_BIT;
+    page_table_P3[_index1].flags &= ~PAGE_REFERENCED_BIT;
+    page_table_P4[_index1].flags &= ~PAGE_REFERENCED_BIT;
   }
 }
 
 // initialize values for the process' page tables
-static inline void init_page_tables(void) {
-  for (int index = 0; index < PROC_MAX_PAGES; index++) {
-    page_table_P1[index].page_id = index;
-    page_table_P2[index].page_id = index;
-    page_table_P3[index].page_id = index;
-    page_table_P4[index].page_id = index;
+static void init_page_tables(void) {
+  for (int i = 0; i < PROC_MAX_PAGES; i++) {
+    page_table_P1[i].page_id = i;
+    page_table_P2[i].page_id = i;
+    page_table_P3[i].page_id = i;
+    page_table_P4[i].page_id = i;
 
-    page_table_P1[index].flags = 0;
-    page_table_P2[index].flags = 0;
-    page_table_P3[index].flags = 0;
-    page_table_P4[index].flags = 0;
+    page_table_P1[i].flags = 0;
+    page_table_P2[i].flags = 0;
+    page_table_P3[i].flags = 0;
+    page_table_P4[i].flags = 0;
+
+    page_table_P1[i].page_frame = -1;
+    page_table_P2[i].page_frame = -1;
+    page_table_P3[i].page_frame = -1;
+    page_table_P4[i].page_frame = -1;
+  }
+}
+
+// returns whether the requested page is in memory, by checking the valid bit
+static inline bool is_in_memory(const vmem_io_request_t req) {
+  switch (req.proc_id) {
+  case 1:
+    return (bool)(page_table_P1[req.proc_page_id].flags & PAGE_VALID_BIT);
+  case 2:
+    return (bool)(page_table_P2[req.proc_page_id].flags & PAGE_VALID_BIT);
+  case 3:
+    return (bool)(page_table_P3[req.proc_page_id].flags & PAGE_VALID_BIT);
+  case 4:
+    return (bool)(page_table_P4[req.proc_page_id].flags & PAGE_VALID_BIT);
+  default:
+    fprintf(stderr, "Invalid process ID: %d\n", req.proc_id);
+    exit(10);
+  }
+}
+
+// returns whether there is memory available to store a new page
+static inline bool is_memory_available(void) {
+  for (int i = 0; i < RAM_MAX_PAGES; i++) {
+    if (!main_memory[i])
+      return true;
+  }
+
+  return false;
+}
+
+// handle memory io request, checking if a page fault is necessary
+static void handle_vmem_io_request(const vmem_io_request_t req) {
+  // validate data coming from procs_sim
+  assert(req.proc_id >= 1 && req.proc_id <= 4);
+  assert(req.proc_page_id >= 0 && req.proc_page_id < PROC_MAX_PAGES);
+  assert(req.operation == 'R' || req.operation == 'W');
+
+  dmsg("vmem_sim got P%d: %02d %c", req.proc_id, req.proc_page_id,
+       req.operation);
+
+  if (is_in_memory(req)) {
+    // page was in memory, simply update statistics
+  } else if (is_memory_available()) {
+    // page fault, but no need to replace
+  } else {
+    // page fault, replace with selected algorithm
   }
 }
 
@@ -59,11 +114,6 @@ int main(int argc, char **argv) {
     fprintf(stderr, "Usage: ./vmem_sim <num rounds> <page algo> [<k param>]\n");
     exit(3);
   }
-
-  // selected page replacement algorithm
-  page_algo_t algorithm;
-  // function pointer to the selected page replacement algorithm
-  page_algo_func_t page_algo_func;
 
   // one round represents one memory io request from each process,
   // so four requests total
@@ -94,6 +144,7 @@ int main(int argc, char **argv) {
 
     // TODO: set function pointer
   } else {
+    fprintf(stderr, "Invalid page algorithm: %s\n", argv[2]);
     fprintf(stderr, "Available algorithms: NRU, 2ndC, LRU, WS\n");
     exit(4);
   }
@@ -203,12 +254,7 @@ int main(int argc, char **argv) {
       perror("Pipe read error");
       exit(9);
     }
-    assert(req.proc_page_id >= 0 && req.proc_page_id < PROC_MAX_PAGES);
-    assert(req.operation == 'R' || req.operation == 'W');
-
-    dmsg("vmem_sim got P1: %02d %c", req.proc_page_id, req.operation);
-
-    // code
+    handle_vmem_io_request(req);
 
     // Process 2
     sem_post(sem_P2);
@@ -217,12 +263,7 @@ int main(int argc, char **argv) {
       perror("Pipe read error");
       exit(9);
     }
-    assert(req.proc_page_id >= 0 && req.proc_page_id < PROC_MAX_PAGES);
-    assert(req.operation == 'R' || req.operation == 'W');
-
-    dmsg("vmem_sim got P2: %02d %c", req.proc_page_id, req.operation);
-
-    // code
+    handle_vmem_io_request(req);
 
     // Process 3
     sem_post(sem_P3);
@@ -231,27 +272,18 @@ int main(int argc, char **argv) {
       perror("Pipe read error");
       exit(9);
     }
-    assert(req.proc_page_id >= 0 && req.proc_page_id < PROC_MAX_PAGES);
-    assert(req.operation == 'R' || req.operation == 'W');
+    handle_vmem_io_request(req);
 
-    dmsg("vmem_sim got P3: %02d %c", req.proc_page_id, req.operation);
-
-    // code
-
-    // Process 1
+    // Process 4
     sem_post(sem_P4);
 
     if (read(pipe_P4[PIPE_READ], &req, sizeof(req)) == -1) {
       perror("Pipe read error");
       exit(9);
     }
-    assert(req.proc_page_id >= 0 && req.proc_page_id < PROC_MAX_PAGES);
-    assert(req.operation == 'R' || req.operation == 'W');
+    handle_vmem_io_request(req);
 
-    dmsg("vmem_sim got P4: %02d %c", req.proc_page_id, req.operation);
-
-    // code
-
+    // periodically clear reference bits
     if (i % REF_BITS_CLEAR_INTERVAL == 0)
       clear_ref_bits();
 

@@ -41,6 +41,7 @@ extern const char *PAGE_ALGO_STR[];
 
 // data being sent from procs_sim to vmem_sim through processes' pipes
 typedef struct {
+  int proc_id;      // 1-4 process ID
   int proc_page_id; // 0-31 page ID within the process' memory
   char operation;   // 'R' or 'W' for read or write
 } vmem_io_request_t;
@@ -51,7 +52,8 @@ typedef void (*page_algo_func_t)(const vmem_io_request_t);
 // page flags
 typedef unsigned char page_flags_t;
 
-// process page table entry
+// process page table entry.
+// each value must be initialized in init_page_tables()
 typedef struct {
   int page_id;        // 0-31 page ID
   page_flags_t flags; // page flags
@@ -60,4 +62,5 @@ typedef struct {
    * Bit 0b00000010: Referenced (page has been read/written recently)
    * Bit 0b00000100: Modified (page has been written to, "dirty")
    */
+  int page_frame; // page index in main memory, -1 if not in memory
 } page_table_entry_t;

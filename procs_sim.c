@@ -97,6 +97,7 @@ int main(void) {
       fprintf(stderr, "Error reading pagelist_P1\n");
       exit(7);
     }
+    req.proc_id = 1;
     assert(req.proc_page_id >= 0 && req.proc_page_id < PROC_MAX_PAGES);
     assert(req.operation == 'R' || req.operation == 'W');
     if (write(pipe_P1[PIPE_WRITE], &req, sizeof(req)) == -1) {
@@ -113,6 +114,7 @@ int main(void) {
       fprintf(stderr, "Error reading pagelist_P2\n");
       exit(7);
     }
+    req.proc_id = 2;
     assert(req.proc_page_id >= 0 && req.proc_page_id < PROC_MAX_PAGES);
     assert(req.operation == 'R' || req.operation == 'W');
     if (write(pipe_P2[PIPE_WRITE], &req, sizeof(req)) == -1) {
@@ -128,6 +130,7 @@ int main(void) {
       fprintf(stderr, "Error reading pagelist_P3\n");
       exit(7);
     }
+    req.proc_id = 3;
     assert(req.proc_page_id >= 0 && req.proc_page_id < PROC_MAX_PAGES);
     assert(req.operation == 'R' || req.operation == 'W');
     if (write(pipe_P3[PIPE_WRITE], &req, sizeof(req)) == -1) {
@@ -144,6 +147,7 @@ int main(void) {
       fprintf(stderr, "Error reading pagelist_P4\n");
       exit(7);
     }
+    req.proc_id = 4;
     assert(req.proc_page_id >= 0 && req.proc_page_id < PROC_MAX_PAGES);
     assert(req.operation == 'R' || req.operation == 'W');
     if (write(pipe_P4[PIPE_WRITE], &req, sizeof(req)) == -1) {
