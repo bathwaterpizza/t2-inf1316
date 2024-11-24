@@ -9,9 +9,6 @@
 #include <strings.h>
 #include <unistd.h>
 
-// TODO: function pointer for selected paging algorithm
-typedef void (*page_algo_func_t)(int, int *);
-
 // working set window parameter
 static int k_param;
 // page frames available in main memory.
@@ -24,6 +21,36 @@ static page_table_entry_t page_table_P2[PROC_MAX_PAGES];
 static page_table_entry_t page_table_P3[PROC_MAX_PAGES];
 static page_table_entry_t page_table_P4[PROC_MAX_PAGES];
 
+// clears the reference bits in each process' page table
+static inline void clear_ref_bits(void) {
+  for (int index = 0; index < PROC_MAX_PAGES; index++) {
+    page_table_P1[index].flags &= ~PAGE_REFERENCED_BIT;
+    page_table_P2[index].flags &= ~PAGE_REFERENCED_BIT;
+    page_table_P3[index].flags &= ~PAGE_REFERENCED_BIT;
+    page_table_P4[index].flags &= ~PAGE_REFERENCED_BIT;
+  }
+}
+
+// initialize values for the process' page tables
+static inline void init_page_tables(void) {
+  for (int index = 0; index < PROC_MAX_PAGES; index++) {
+    page_table_P1[index].page_id = index;
+    page_table_P2[index].page_id = index;
+    page_table_P3[index].page_id = index;
+    page_table_P4[index].page_id = index;
+
+    page_table_P1[index].flags = 0;
+    page_table_P2[index].flags = 0;
+    page_table_P3[index].flags = 0;
+    page_table_P4[index].flags = 0;
+  }
+}
+
+// handle page fault according to Not Recently Used
+static void page_algo_NRU(const vmem_io_request_t req) {
+  // todo
+}
+
 int main(int argc, char **argv) {
   dmsg("vmem_sim started");
 
@@ -33,8 +60,11 @@ int main(int argc, char **argv) {
     exit(3);
   }
 
+  // selected page replacement algorithm
   page_algo_t algorithm;
+  // function pointer to the selected page replacement algorithm
   page_algo_func_t page_algo_func;
+
   // one round represents one memory io request from each process,
   // so four requests total
   const int num_rounds = atoi(argv[1]);
@@ -50,8 +80,7 @@ int main(int argc, char **argv) {
   // parse selected paging algorithm
   if (strcasecmp(argv[2], "nru") == 0) {
     algorithm = ALGO_NRU;
-
-    // TODO: set function pointer
+    page_algo_func = page_algo_NRU;
   } else if (strcasecmp(argv[2], "2ndc") == 0) {
     algorithm = ALGO_2ndC;
 
@@ -160,8 +189,7 @@ int main(int argc, char **argv) {
   close(pipe_P3[PIPE_WRITE]);
   close(pipe_P4[PIPE_WRITE]);
 
-  // init process page tables
-  // TODO: yes
+  init_page_tables();
 
   // main loop, post sem and read memory io requests from processes' pipes.
   // each iteration is a round, meaning one IO request from each process
@@ -224,15 +252,8 @@ int main(int argc, char **argv) {
 
     // code
 
-    // clear referenced bits
-    if (i % REF_BITS_CLEAR_INTERVAL == 0) {
-      for (int j = 0; j < PROC_MAX_PAGES; j++) {
-        page_table_P1[j].flags &= ~PAGE_REFERENCED_BIT;
-        page_table_P2[j].flags &= ~PAGE_REFERENCED_BIT;
-        page_table_P3[j].flags &= ~PAGE_REFERENCED_BIT;
-        page_table_P4[j].flags &= ~PAGE_REFERENCED_BIT;
-      }
-    }
+    if (i % REF_BITS_CLEAR_INTERVAL == 0)
+      clear_ref_bits();
 
     dmsg("vmem_sim finished round %d", i);
   }

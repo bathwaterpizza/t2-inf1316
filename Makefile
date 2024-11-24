@@ -5,7 +5,7 @@ CFLAGS = -Wall -g
 PROGRAMS = pagelist_gen vmem_sim procs_sim
 
 # Common source files
-COMMON_SRC = util.c
+COMMON_SRC = util.c types.c
 
 # Header files
 HEADERS = util.h types.h

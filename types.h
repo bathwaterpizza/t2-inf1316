@@ -37,12 +37,16 @@ typedef enum {
   ALGO_LRU,  // Least Recently Used/Aging
   ALGO_WS    // Working Set (takes k param)
 } page_algo_t;
+extern const char *PAGE_ALGO_STR[];
 
 // data being sent from procs_sim to vmem_sim through processes' pipes
 typedef struct {
   int proc_page_id; // 0-31 page ID within the process' memory
   char operation;   // 'R' or 'W' for read or write
 } vmem_io_request_t;
+
+// function pointer type for page replacement algorithms
+typedef void (*page_algo_func_t)(const vmem_io_request_t);
 
 // page flags
 typedef unsigned char page_flags_t;
