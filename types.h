@@ -27,12 +27,26 @@
 typedef enum {
   ALGO_NRU,  // Not Recently Used
   ALGO_2ndC, // Second Chance
-  ALGO_LRU,  // Least Recently Used
+  ALGO_LRU,  // Least Recently Used/Aging
   ALGO_WS    // Working Set (takes k param)
 } page_algo_t;
 
 // data being sent from procs_sim to vmem_sim through processes' pipes
 typedef struct {
-  int proc_page_id; // 0-31 page id within the process' memory
+  int proc_page_id; // 0-31 page ID within the process' memory
   char operation;   // 'R' or 'W' for read or write
 } vmem_io_request_t;
+
+// page flags
+typedef unsigned char page_flags_t;
+
+// process page table entry
+typedef struct {
+  int page_id;        // 0-31 page ID
+  page_flags_t flags; // page flags
+  /*
+   * Bit 0b00000001: Valid (page is in main memory)
+   * Bit 0b00000010: Referenced (page has been read/written recently)
+   * Bit 0b00000100: Modified (page has been written to, "dirty")
+   */
+} page_table_entry_t;

@@ -3,6 +3,7 @@
 #include <assert.h>
 #include <fcntl.h>
 #include <semaphore.h>
+#include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <strings.h>
@@ -13,6 +14,15 @@ typedef void (*page_algo_func_t)(int, int *);
 
 // working set window parameter
 static int k_param;
+// page frames available in main memory.
+// false = available,
+// true = occupied
+static bool main_memory[RAM_MAX_PAGES] = {false};
+// process page tables
+static page_table_entry_t page_table_P1[PROC_MAX_PAGES];
+static page_table_entry_t page_table_P2[PROC_MAX_PAGES];
+static page_table_entry_t page_table_P3[PROC_MAX_PAGES];
+static page_table_entry_t page_table_P4[PROC_MAX_PAGES];
 
 int main(int argc, char **argv) {
   dmsg("vmem_sim started");
@@ -149,6 +159,9 @@ int main(int argc, char **argv) {
   close(pipe_P2[PIPE_WRITE]);
   close(pipe_P3[PIPE_WRITE]);
   close(pipe_P4[PIPE_WRITE]);
+
+  // init process page tables
+  // TODO: yes
 
   // main loop, post sem and read memory io requests from processes' pipes
   for (int i = 0; i < num_rounds; i++) {
