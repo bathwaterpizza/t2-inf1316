@@ -163,8 +163,9 @@ int main(int argc, char **argv) {
   // init process page tables
   // TODO: yes
 
-  // main loop, post sem and read memory io requests from processes' pipes
-  for (int i = 0; i < num_rounds; i++) {
+  // main loop, post sem and read memory io requests from processes' pipes.
+  // each iteration is a round, meaning one IO request from each process
+  for (int i = 1; i <= num_rounds; i++) {
     vmem_io_request_t req;
 
     // Process 1
@@ -222,6 +223,16 @@ int main(int argc, char **argv) {
     dmsg("vmem_sim got P4: %02d %c", req.proc_page_id, req.operation);
 
     // code
+
+    // clear referenced bits
+    if (i % REF_BITS_CLEAR_INTERVAL == 0) {
+      for (int j = 0; j < PROC_MAX_PAGES; j++) {
+        page_table_P1[j].flags &= ~PAGE_REFERENCED_BIT;
+        page_table_P2[j].flags &= ~PAGE_REFERENCED_BIT;
+        page_table_P3[j].flags &= ~PAGE_REFERENCED_BIT;
+        page_table_P4[j].flags &= ~PAGE_REFERENCED_BIT;
+      }
+    }
 
     dmsg("vmem_sim finished round %d", i);
   }

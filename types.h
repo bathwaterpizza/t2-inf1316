@@ -23,6 +23,13 @@
 // amount of pages the simulated physical memory has
 #define RAM_MAX_PAGES 16
 
+// how often should page entries' referenced bit be cleared, in rounds
+#define REF_BITS_CLEAR_INTERVAL 3
+// page flags bits
+#define PAGE_VALID_BIT 0b00000001
+#define PAGE_REFERENCED_BIT 0b00000010
+#define PAGE_MODIFIED_BIT 0b00000100
+
 // used to identify the algorithm being used in this execution
 typedef enum {
   ALGO_NRU,  // Not Recently Used
