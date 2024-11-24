@@ -52,6 +52,26 @@ static void init_page_tables(void) {
     page_table_P2[i].page_frame = -1;
     page_table_P3[i].page_frame = -1;
     page_table_P4[i].page_frame = -1;
+
+    page_table_P1[i].read_count = 0;
+    page_table_P2[i].read_count = 0;
+    page_table_P3[i].read_count = 0;
+    page_table_P4[i].read_count = 0;
+
+    page_table_P1[i].write_count = 0;
+    page_table_P2[i].write_count = 0;
+    page_table_P3[i].write_count = 0;
+    page_table_P4[i].write_count = 0;
+
+    page_table_P1[i].page_fault_count = 0;
+    page_table_P2[i].page_fault_count = 0;
+    page_table_P3[i].page_fault_count = 0;
+    page_table_P4[i].page_fault_count = 0;
+
+    page_table_P1[i].modified_fault_count = 0;
+    page_table_P2[i].modified_fault_count = 0;
+    page_table_P3[i].modified_fault_count = 0;
+    page_table_P4[i].modified_fault_count = 0;
   }
 }
 
@@ -74,15 +94,16 @@ static inline bool is_in_memory(const vmem_io_request_t req) {
 
 // returns whether there is memory available to store a new page
 static inline bool is_memory_available(void) {
-  for (int i = 0; i < RAM_MAX_PAGES; i++) {
-    if (!main_memory[i])
+  for (int _index2 = 0; _index2 < RAM_MAX_PAGES; _index2++) {
+    if (!main_memory[_index2])
       return true;
   }
 
   return false;
 }
 
-// handle memory io request, checking if a page fault is necessary
+// handle memory io request, checking if a page fault is necessary and updating
+// stats as needed
 static void handle_vmem_io_request(const vmem_io_request_t req) {
   // validate data coming from procs_sim
   assert(req.proc_id >= 1 && req.proc_id <= 4);
@@ -93,11 +114,14 @@ static void handle_vmem_io_request(const vmem_io_request_t req) {
        req.operation);
 
   if (is_in_memory(req)) {
-    // page was in memory, simply update statistics
+    // page was in memory, simply update stats
+    req.operation == 'R' ? page_table_P1[req.proc_page_id].read_count++
+                         : page_table_P1[req.proc_page_id].write_count++;
   } else if (is_memory_available()) {
     // page fault, but no need to replace
   } else {
     // page fault, replace with selected algorithm
+    page_algo_func(req);
   }
 }
 

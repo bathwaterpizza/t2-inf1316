@@ -52,9 +52,10 @@ typedef void (*page_algo_func_t)(const vmem_io_request_t);
 // page flags
 typedef unsigned char page_flags_t;
 
-// process page table entry.
-// each value must be initialized in init_page_tables()
+// process page table entry
+// NOTE: each value must be initialized in init_page_tables()
 typedef struct {
+  // page table data
   int page_id;        // 0-31 page ID
   page_flags_t flags; // page flags
   /*
@@ -63,4 +64,10 @@ typedef struct {
    * Bit 0b00000100: Modified (page has been written to, "dirty")
    */
   int page_frame; // page index in main memory, -1 if not in memory
+
+  // statistics
+  int read_count;           // amount of R requests to this page
+  int write_count;          // amount of W requests to this page
+  int page_fault_count;     // amount of total page faults to this page
+  int modified_fault_count; // amount of dirty page faults to this page
 } page_table_entry_t;
