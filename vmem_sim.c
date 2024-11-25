@@ -515,6 +515,8 @@ static void print_stats(void) {
   msg("Total Requests: %d", total_requests);
   msg("Page Fault Rate: %.2f%%",
       (total_page_faults / (double)total_requests) * 100);
+  msg("Dirty Fault Rate: %.2f%%",
+      (total_modified_faults / (double)total_requests) * 100);
 }
 
 int main(int argc, char **argv) {
