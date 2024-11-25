@@ -387,7 +387,7 @@ static int get_free_memory_index(void) {
 
 // get ID of page to swap out of memory according to Not Recently Used,
 // -1 if not found
-static int get_page_to_swap_NRU(int proc_id) {
+static int get_page_to_swap_NRU(const int proc_id) {
   // search for a page to replace according to NRU priority
   for (int i = 0; i < PROC_MAX_PAGES; i++) {
     if (get_valid(proc_id, i) && !get_referenced(proc_id, i) &&
@@ -419,7 +419,7 @@ static int get_page_to_swap_NRU(int proc_id) {
 }
 
 // enqueue a page to the 2ndC page queue of the specified process
-static inline void enqueue_page(int proc_id, int proc_page_id) {
+static inline void enqueue_page(const int proc_id, const int proc_page_id) {
   switch (proc_id) {
   case 1:
     enqueue(page_queue_P1, proc_page_id);
@@ -440,7 +440,7 @@ static inline void enqueue_page(int proc_id, int proc_page_id) {
 }
 
 // dequeue a page from the 2ndC page queue of the specified process
-static inline int dequeue_page(int proc_id) {
+static inline int dequeue_page(const int proc_id) {
   int proc_page_id = -1;
 
   switch (proc_id) {
@@ -494,6 +494,49 @@ static void page_algo_NRU(const vmem_io_request_t req) {
   set_valid(req.proc_id, swap_page, false);
   set_referenced(req.proc_id, swap_page, false);
   set_modified(req.proc_id, swap_page, false);
+}
+
+// handle page fault according to Second Chance
+static void page_algo_2ndC(const vmem_io_request_t req) {
+  int oldest_page = dequeue_page(req.proc_id);
+  assert(oldest_page != -1); // there should be a page in queue
+  int oldest_frame;
+
+  // find oldest page that hasn't been referenced, giving others a 2nd chance
+  while (get_referenced(req.proc_id, oldest_page)) {
+    set_referenced(req.proc_id, oldest_page, false);
+    enqueue_page(req.proc_id, oldest_page);
+    oldest_page = dequeue_page(req.proc_id);
+    assert(oldest_page != -1); // there should be a page in queue
+  }
+
+  oldest_frame = get_page_frame(req.proc_id, oldest_page);
+  assert(oldest_frame != -1); // oldest page should be in memory
+
+  // check if we are swapping a modified page
+  if (get_modified(req.proc_id, oldest_page)) {
+    // dirty
+    increment_fault_count(req, true);
+    msg("Page fault P%d: %02d -> frame %02d (replaced %02d) (dirty)",
+        req.proc_id, req.proc_page_id, oldest_frame, oldest_page);
+  } else {
+    // clean
+    increment_fault_count(req, false);
+    msg("Page fault P%d: %02d -> frame %02d (replaced %02d) (clean)",
+        req.proc_id, req.proc_page_id, oldest_frame, oldest_page);
+  }
+
+  // enqueue newest page
+  enqueue_page(req.proc_id, req.proc_page_id);
+
+  // update page frames
+  set_page_frame(req.proc_id, req.proc_page_id, oldest_frame);
+  set_page_frame(req.proc_id, oldest_page, -1);
+
+  // update flag bits
+  set_valid(req.proc_id, req.proc_page_id, true);
+  set_valid(req.proc_id, oldest_page, false);
+  set_modified(req.proc_id, oldest_page, false);
 }
 
 // handle memory io request, checking if a page fault is necessary and
@@ -612,8 +655,7 @@ int main(int argc, char **argv) {
     page_algo_func = page_algo_NRU;
   } else if (strcasecmp(argv[2], "2ndc") == 0) {
     algorithm = ALGO_2ndC;
-
-    // TODO: set function pointer
+    page_algo_func = page_algo_2ndC;
   } else if (strcasecmp(argv[2], "lru") == 0) {
     algorithm = ALGO_LRU;
 
