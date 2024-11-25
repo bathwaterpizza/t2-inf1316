@@ -1,7 +1,7 @@
 #pragma once
 
 // enable debug output
-#define DEBUG
+// #define DEBUG
 
 // convenient pipe fd array indexers
 #define PIPE_READ 0

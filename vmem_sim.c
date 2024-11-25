@@ -27,11 +27,11 @@ static page_table_entry_t page_table_P4[PROC_MAX_PAGES];
 
 // clears the reference bits in each process' page table
 static inline void clear_ref_bits(void) {
-  for (int _index1 = 0; _index1 < PROC_MAX_PAGES; _index1++) {
-    page_table_P1[_index1].flags &= ~PAGE_REFERENCED_BIT;
-    page_table_P2[_index1].flags &= ~PAGE_REFERENCED_BIT;
-    page_table_P3[_index1].flags &= ~PAGE_REFERENCED_BIT;
-    page_table_P4[_index1].flags &= ~PAGE_REFERENCED_BIT;
+  for (int i = 0; i < PROC_MAX_PAGES; i++) {
+    page_table_P1[i].flags &= ~PAGE_REFERENCED_BIT;
+    page_table_P2[i].flags &= ~PAGE_REFERENCED_BIT;
+    page_table_P3[i].flags &= ~PAGE_REFERENCED_BIT;
+    page_table_P4[i].flags &= ~PAGE_REFERENCED_BIT;
   }
 }
 
@@ -94,8 +94,8 @@ static inline bool is_in_memory(const vmem_io_request_t req) {
 
 // returns whether there is memory available to store a new page
 static inline bool is_memory_available(void) {
-  for (int _index2 = 0; _index2 < RAM_MAX_PAGES; _index2++) {
-    if (!main_memory[_index2])
+  for (int i = 0; i < RAM_MAX_PAGES; i++) {
+    if (!main_memory[i])
       return true;
   }
 
@@ -328,6 +328,9 @@ static void handle_vmem_io_request(const vmem_io_request_t req) {
     main_memory[page_frame_id] = true;
     set_valid(req, true);
     set_page_frame(req, page_frame_id);
+
+    // update page fault stats
+    increment_fault_count(req, false);
 
     msg("Page fault P%d: %02d %c -> frame %d", req.proc_id, req.proc_page_id,
         req.operation, page_frame_id);
