@@ -195,6 +195,23 @@ static inline void set_modified(const int proc_id, const int proc_page_id,
   }
 }
 
+// get the modified bit of the requested page
+static inline bool get_modified(const int proc_id, const int proc_page_id) {
+  switch (proc_id) {
+  case 1:
+    return (bool)(page_table_P1[proc_page_id].flags & PAGE_MODIFIED_BIT);
+  case 2:
+    return (bool)(page_table_P2[proc_page_id].flags & PAGE_MODIFIED_BIT);
+  case 3:
+    return (bool)(page_table_P3[proc_page_id].flags & PAGE_MODIFIED_BIT);
+  case 4:
+    return (bool)(page_table_P4[proc_page_id].flags & PAGE_MODIFIED_BIT);
+  default:
+    fprintf(stderr, "Invalid process ID: %d\n", proc_id);
+    exit(10);
+  }
+}
+
 // set or clear the referenced bit of the requested page
 static inline void set_referenced(const int proc_id, const int proc_page_id,
                                   const bool value) {
@@ -223,6 +240,23 @@ static inline void set_referenced(const int proc_id, const int proc_page_id,
     else
       page_table_P4[proc_page_id].flags &= ~PAGE_REFERENCED_BIT;
     break;
+  default:
+    fprintf(stderr, "Invalid process ID: %d\n", proc_id);
+    exit(10);
+  }
+}
+
+// get the referenced bit of the requested page
+static inline bool get_referenced(const int proc_id, const int proc_page_id) {
+  switch (proc_id) {
+  case 1:
+    return (bool)(page_table_P1[proc_page_id].flags & PAGE_REFERENCED_BIT);
+  case 2:
+    return (bool)(page_table_P2[proc_page_id].flags & PAGE_REFERENCED_BIT);
+  case 3:
+    return (bool)(page_table_P3[proc_page_id].flags & PAGE_REFERENCED_BIT);
+  case 4:
+    return (bool)(page_table_P4[proc_page_id].flags & PAGE_REFERENCED_BIT);
   default:
     fprintf(stderr, "Invalid process ID: %d\n", proc_id);
     exit(10);
@@ -263,21 +297,21 @@ static inline void set_valid(const int proc_id, const int proc_page_id,
   }
 }
 
-// get the index of the first free page frame from main memory
-static int get_free_memory_index(void) {
-  int free_memory = -1;
-
-  for (int i = 0; i < RAM_MAX_PAGES; i++) {
-    if (!main_memory[i]) {
-      free_memory = i;
-      break;
-    }
+// get the valid bit of the requested page
+static inline bool get_valid(const int proc_id, const int proc_page_id) {
+  switch (proc_id) {
+  case 1:
+    return (bool)(page_table_P1[proc_page_id].flags & PAGE_VALID_BIT);
+  case 2:
+    return (bool)(page_table_P2[proc_page_id].flags & PAGE_VALID_BIT);
+  case 3:
+    return (bool)(page_table_P3[proc_page_id].flags & PAGE_VALID_BIT);
+  case 4:
+    return (bool)(page_table_P4[proc_page_id].flags & PAGE_VALID_BIT);
+  default:
+    fprintf(stderr, "Invalid process ID: %d\n", proc_id);
+    exit(10);
   }
-
-  // this should never be called when there are no free page frames
-  assert(free_memory != -1);
-
-  return free_memory;
 }
 
 // set the page frame of the requested page
@@ -302,6 +336,40 @@ static inline void set_page_frame(const int proc_id, const int proc_page_id,
     fprintf(stderr, "Invalid process ID: %d\n", proc_id);
     exit(10);
   }
+}
+
+// get the page frame of the requested page
+static inline int get_page_frame(const int proc_id, const int proc_page_id) {
+  switch (proc_id) {
+  case 1:
+    return page_table_P1[proc_page_id].page_frame;
+  case 2:
+    return page_table_P2[proc_page_id].page_frame;
+  case 3:
+    return page_table_P3[proc_page_id].page_frame;
+  case 4:
+    return page_table_P4[proc_page_id].page_frame;
+  default:
+    fprintf(stderr, "Invalid process ID: %d\n", proc_id);
+    exit(10);
+  }
+}
+
+// get the index of the first free page frame from main memory
+static int get_free_memory_index(void) {
+  int free_memory = -1;
+
+  for (int i = 0; i < RAM_MAX_PAGES; i++) {
+    if (!main_memory[i]) {
+      free_memory = i;
+      break;
+    }
+  }
+
+  // this should never be called when there are no free page frames
+  assert(free_memory != -1);
+
+  return free_memory;
 }
 
 // handle memory io request, checking if a page fault is necessary and updating
@@ -571,5 +639,5 @@ int main(int argc, char **argv) {
 
   dmsg("vmem_sim finished");
 
-  return 0;
+  return EXIT_SUCCESS;
 }
