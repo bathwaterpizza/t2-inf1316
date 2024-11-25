@@ -317,7 +317,7 @@ static inline bool get_valid(const int proc_id, const int proc_page_id) {
 // set the page frame of the requested page
 static inline void set_page_frame(const int proc_id, const int proc_page_id,
                                   const int page_frame) {
-  assert(page_frame >= 0 && page_frame < RAM_MAX_PAGES);
+  assert((page_frame == -1) || (page_frame >= 0 && page_frame < RAM_MAX_PAGES));
 
   switch (proc_id) {
   case 1:
@@ -372,8 +372,72 @@ static int get_free_memory_index(void) {
   return free_memory;
 }
 
-// handle memory io request, checking if a page fault is necessary and updating
-// stats as needed
+// get ID of page to swap out of memory according to Not Recently Used,
+// -1 if not found
+static int get_page_to_swap_NRU(int proc_id) {
+  // search for a page to replace according to NRU priority
+  for (int i = 0; i < PROC_MAX_PAGES; i++) {
+    if (get_valid(proc_id, i) && !get_referenced(proc_id, i) &&
+        !get_modified(proc_id, i)) {
+      return i; // UNreferenced and UNmodified
+    }
+  }
+  for (int i = 0; i < PROC_MAX_PAGES; i++) {
+    if (get_valid(proc_id, i) && !get_referenced(proc_id, i) &&
+        get_modified(proc_id, i)) {
+      return i; // UNreferenced and modified
+    }
+  }
+  for (int i = 0; i < PROC_MAX_PAGES; i++) {
+    if (get_valid(proc_id, i) && get_referenced(proc_id, i) &&
+        !get_modified(proc_id, i)) {
+      return i; // referenced and UNmodified
+    }
+  }
+  for (int i = 0; i < PROC_MAX_PAGES; i++) {
+    if (get_valid(proc_id, i) && get_referenced(proc_id, i) &&
+        get_modified(proc_id, i)) {
+      return i; // referenced and modified
+    }
+  }
+
+  // no page found, shouldn't happen
+  return -1;
+}
+
+// handle page fault according to Not Recently Used
+static void page_algo_NRU(const vmem_io_request_t req) {
+  const int swap_page = get_page_to_swap_NRU(req.proc_id);
+  assert(swap_page != -1); // there should always be a page to swap
+  const int swap_frame = get_page_frame(req.proc_id, swap_page);
+  assert(swap_frame != -1); // page to swap should be in memory
+
+  // check if we are swapping a modified page
+  if (get_modified(req.proc_id, swap_page)) {
+    // dirty
+    increment_fault_count(req, true);
+    msg("Page fault P%d: %02d -> frame %02d (replaced %02d) (dirty)",
+        req.proc_id, req.proc_page_id, swap_frame, swap_page);
+  } else {
+    // clean
+    increment_fault_count(req, false);
+    msg("Page fault P%d: %02d -> frame %02d (replaced %02d) (clean)",
+        req.proc_id, req.proc_page_id, swap_frame, swap_page);
+  }
+
+  // update page frames
+  set_page_frame(req.proc_id, req.proc_page_id, swap_frame);
+  set_page_frame(req.proc_id, swap_page, -1);
+
+  // update flag bits
+  set_valid(req.proc_id, req.proc_page_id, true);
+  set_valid(req.proc_id, swap_page, false);
+  set_referenced(req.proc_id, swap_page, false);
+  set_modified(req.proc_id, swap_page, false);
+}
+
+// handle memory io request, checking if a page fault is necessary and
+// updating stats as needed
 static void handle_vmem_io_request(const vmem_io_request_t req) {
   // validate data coming from procs_sim
   assert(req.proc_id >= 1 && req.proc_id <= 4);
@@ -404,17 +468,12 @@ static void handle_vmem_io_request(const vmem_io_request_t req) {
     // update page fault stats
     increment_fault_count(req, false);
 
-    msg("Page fault P%d: %02d -> frame %d (replaced none) (clean)", req.proc_id,
-        req.proc_page_id, page_frame);
+    msg("Page fault P%d: %02d -> frame %02d (replaced none) (clean)",
+        req.proc_id, req.proc_page_id, page_frame);
   } else if (!is_in_memory(req)) {
     // page fault, replace with selected algorithm
     page_algo_func(req);
   }
-}
-
-// handle page fault according to Not Recently Used
-static void page_algo_NRU(const vmem_io_request_t req) {
-  // TODO: implement
 }
 
 int main(int argc, char **argv) {
