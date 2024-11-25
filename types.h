@@ -86,3 +86,15 @@ typedef struct {
   int page_fault_count;     // amount of total page faults caused by this page
   int modified_fault_count; // amount of dirty page faults caused by this page
 } page_table_entry_t;
+
+// queue node
+typedef struct node_t {
+  int data;
+  struct node_t *next;
+} node_t;
+
+// queue
+typedef struct {
+  node_t *front;
+  node_t *rear;
+} queue_t;

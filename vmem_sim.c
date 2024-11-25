@@ -485,6 +485,7 @@ static void print_stats(void) {
   page_table_entry_t *page_tables[] = {page_table_P1, page_table_P2,
                                        page_table_P3, page_table_P4};
 
+  // sum and print stats from each process table
   for (int p = 0; p < 4; p++) {
     int reads = 0, writes = 0, page_faults = 0, modified_faults = 0;
     for (int i = 0; i < PROC_MAX_PAGES; i++) {
@@ -506,7 +507,7 @@ static void print_stats(void) {
     msg("Modified Faults: %d", modified_faults);
   }
 
-  // Print combined stats
+  // print combined stats
   msg("--- Combined Stats ---");
   msg("Total Reads: %d", total_reads);
   msg("Total Writes: %d", total_writes);
