@@ -7,6 +7,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <strings.h>
+#include <time.h>
 #include <unistd.h>
 
 // selected page replacement algorithm
@@ -476,6 +477,46 @@ static void handle_vmem_io_request(const vmem_io_request_t req) {
   }
 }
 
+// print simulation results
+static void print_stats(void) {
+  int total_reads = 0, total_writes = 0, total_page_faults = 0,
+      total_modified_faults = 0;
+  int total_requests = 0;
+  page_table_entry_t *page_tables[] = {page_table_P1, page_table_P2,
+                                       page_table_P3, page_table_P4};
+
+  for (int p = 0; p < 4; p++) {
+    int reads = 0, writes = 0, page_faults = 0, modified_faults = 0;
+    for (int i = 0; i < PROC_MAX_PAGES; i++) {
+      reads += page_tables[p][i].read_count;
+      writes += page_tables[p][i].write_count;
+      page_faults += page_tables[p][i].page_fault_count;
+      modified_faults += page_tables[p][i].modified_fault_count;
+    }
+    total_reads += reads;
+    total_writes += writes;
+    total_page_faults += page_faults;
+    total_modified_faults += modified_faults;
+    total_requests += (reads + writes);
+
+    msg("--- P%d Stats ---", p + 1);
+    msg("Reads: %d", reads);
+    msg("Writes: %d", writes);
+    msg("Page Faults: %d", page_faults);
+    msg("Modified Faults: %d", modified_faults);
+  }
+
+  // Print combined stats
+  msg("--- Combined Stats ---");
+  msg("Total Reads: %d", total_reads);
+  msg("Total Writes: %d", total_writes);
+  msg("Total Page Faults: %d", total_page_faults);
+  msg("Total Modified Faults: %d", total_modified_faults);
+  msg("Total Requests: %d", total_requests);
+  msg("Page Fault Rate: %.2f%%",
+      (total_page_faults / (double)total_requests) * 100);
+}
+
 int main(int argc, char **argv) {
   dmsg("vmem_sim started");
 
@@ -620,6 +661,10 @@ int main(int argc, char **argv) {
         PAGE_ALGO_STR[algorithm]);
   }
 
+  // track elapsed time
+  struct timespec start, end;
+  clock_gettime(CLOCK_MONOTONIC, &start);
+
   // main loop, post sem and read memory io requests from processes'
   // pipes. each iteration is a round, meaning one IO request from each
   // process
@@ -669,9 +714,13 @@ int main(int argc, char **argv) {
     dmsg("vmem_sim finished round %d", i);
   }
 
-  msg("--- Simulation finished ---");
+  // print results
+  clock_gettime(CLOCK_MONOTONIC, &end);
+  double elapsed_time_ms = // elapsed time in seconds
+      (end.tv_sec - start.tv_sec) + (end.tv_nsec - start.tv_nsec) / 1e6;
+  msg("--- Simulation finished after %dms ---", (int)(elapsed_time_ms));
 
-  // TODO: print result statistics, dump process tables
+  print_stats();
 
   // cleanup
   close(pipe_P1[PIPE_READ]);
