@@ -129,7 +129,7 @@ static inline void increment_rw_count(const vmem_io_request_t req) {
 
 // increments the page fault count of the requested page
 static inline void increment_fault_count(const vmem_io_request_t req,
-                                         bool is_modified) {
+                                         const bool is_modified) {
   switch (req.proc_id) {
   case 1:
     page_table_P1[req.proc_page_id].page_fault_count++;
@@ -162,101 +162,103 @@ static inline void increment_fault_count(const vmem_io_request_t req,
 }
 
 // set or clear the modified bit of the requested page
-static inline void set_modified(const vmem_io_request_t req, const bool value) {
-  switch (req.proc_id) {
+static inline void set_modified(const int proc_id, const int proc_page_id,
+                                const bool value) {
+  switch (proc_id) {
   case 1:
     if (value)
-      page_table_P1[req.proc_page_id].flags |= PAGE_MODIFIED_BIT;
+      page_table_P1[proc_page_id].flags |= PAGE_MODIFIED_BIT;
     else
-      page_table_P1[req.proc_page_id].flags &= ~PAGE_MODIFIED_BIT;
+      page_table_P1[proc_page_id].flags &= ~PAGE_MODIFIED_BIT;
     break;
   case 2:
     if (value)
-      page_table_P2[req.proc_page_id].flags |= PAGE_MODIFIED_BIT;
+      page_table_P2[proc_page_id].flags |= PAGE_MODIFIED_BIT;
     else
-      page_table_P2[req.proc_page_id].flags &= ~PAGE_MODIFIED_BIT;
+      page_table_P2[proc_page_id].flags &= ~PAGE_MODIFIED_BIT;
     break;
   case 3:
     if (value)
-      page_table_P3[req.proc_page_id].flags |= PAGE_MODIFIED_BIT;
+      page_table_P3[proc_page_id].flags |= PAGE_MODIFIED_BIT;
     else
-      page_table_P3[req.proc_page_id].flags &= ~PAGE_MODIFIED_BIT;
+      page_table_P3[proc_page_id].flags &= ~PAGE_MODIFIED_BIT;
     break;
   case 4:
     if (value)
-      page_table_P4[req.proc_page_id].flags |= PAGE_MODIFIED_BIT;
+      page_table_P4[proc_page_id].flags |= PAGE_MODIFIED_BIT;
     else
-      page_table_P4[req.proc_page_id].flags &= ~PAGE_MODIFIED_BIT;
+      page_table_P4[proc_page_id].flags &= ~PAGE_MODIFIED_BIT;
     break;
   default:
-    fprintf(stderr, "Invalid process ID: %d\n", req.proc_id);
+    fprintf(stderr, "Invalid process ID: %d\n", proc_id);
     exit(10);
   }
 }
 
 // set or clear the referenced bit of the requested page
-static inline void set_referenced(const vmem_io_request_t req,
+static inline void set_referenced(const int proc_id, const int proc_page_id,
                                   const bool value) {
-  switch (req.proc_id) {
+  switch (proc_id) {
   case 1:
     if (value)
-      page_table_P1[req.proc_page_id].flags |= PAGE_REFERENCED_BIT;
+      page_table_P1[proc_page_id].flags |= PAGE_REFERENCED_BIT;
     else
-      page_table_P1[req.proc_page_id].flags &= ~PAGE_REFERENCED_BIT;
+      page_table_P1[proc_page_id].flags &= ~PAGE_REFERENCED_BIT;
     break;
   case 2:
     if (value)
-      page_table_P2[req.proc_page_id].flags |= PAGE_REFERENCED_BIT;
+      page_table_P2[proc_page_id].flags |= PAGE_REFERENCED_BIT;
     else
-      page_table_P2[req.proc_page_id].flags &= ~PAGE_REFERENCED_BIT;
+      page_table_P2[proc_page_id].flags &= ~PAGE_REFERENCED_BIT;
     break;
   case 3:
     if (value)
-      page_table_P3[req.proc_page_id].flags |= PAGE_REFERENCED_BIT;
+      page_table_P3[proc_page_id].flags |= PAGE_REFERENCED_BIT;
     else
-      page_table_P3[req.proc_page_id].flags &= ~PAGE_REFERENCED_BIT;
+      page_table_P3[proc_page_id].flags &= ~PAGE_REFERENCED_BIT;
     break;
   case 4:
     if (value)
-      page_table_P4[req.proc_page_id].flags |= PAGE_REFERENCED_BIT;
+      page_table_P4[proc_page_id].flags |= PAGE_REFERENCED_BIT;
     else
-      page_table_P4[req.proc_page_id].flags &= ~PAGE_REFERENCED_BIT;
+      page_table_P4[proc_page_id].flags &= ~PAGE_REFERENCED_BIT;
     break;
   default:
-    fprintf(stderr, "Invalid process ID: %d\n", req.proc_id);
+    fprintf(stderr, "Invalid process ID: %d\n", proc_id);
     exit(10);
   }
 }
 
 // set or clear the valid bit of the requested page
-static inline void set_valid(const vmem_io_request_t req, const bool value) {
-  switch (req.proc_id) {
+static inline void set_valid(const int proc_id, const int proc_page_id,
+                             const bool value) {
+  switch (proc_id) {
   case 1:
     if (value)
-      page_table_P1[req.proc_page_id].flags |= PAGE_VALID_BIT;
+      page_table_P1[proc_page_id].flags |= PAGE_VALID_BIT;
     else
-      page_table_P1[req.proc_page_id].flags &= ~PAGE_VALID_BIT;
+      page_table_P1[proc_page_id].flags &= ~PAGE_VALID_BIT;
     break;
   case 2:
     if (value)
-      page_table_P2[req.proc_page_id].flags |= PAGE_VALID_BIT;
+      page_table_P2[proc_page_id].flags |= PAGE_VALID_BIT;
     else
-      page_table_P2[req.proc_page_id].flags &= ~PAGE_VALID_BIT;
+      page_table_P2[proc_page_id].flags &= ~PAGE_VALID_BIT;
     break;
   case 3:
     if (value)
-      page_table_P3[req.proc_page_id].flags |= PAGE_VALID_BIT;
+      page_table_P3[proc_page_id].flags |= PAGE_VALID_BIT;
     else
-      page_table_P3[req.proc_page_id].flags &= ~PAGE_VALID_BIT;
+      page_table_P3[proc_page_id].flags &= ~PAGE_VALID_BIT;
     break;
   case 4:
     if (value)
-      page_table_P4[req.proc_page_id].flags |= PAGE_VALID_BIT;
+      page_table_P4[proc_page_id].flags |= PAGE_VALID_BIT;
     else
-      page_table_P4[req.proc_page_id].flags &= ~PAGE_VALID_BIT;
+      page_table_P4[proc_page_id].flags &= ~PAGE_VALID_BIT;
     break;
   default:
-    fprintf(stderr, "Invalid process ID: %d\n", req.proc_id);
+    fprintf(stderr, "Invalid process ID: %d\n", proc_id);
     exit(10);
   }
 }
@@ -279,23 +281,25 @@ static int get_free_memory_index(void) {
 }
 
 // set the page frame of the requested page
-static inline void set_page_frame(const vmem_io_request_t req,
+static inline void set_page_frame(const int proc_id, const int proc_page_id,
                                   const int page_frame) {
-  switch (req.proc_id) {
+  assert(page_frame >= 0 && page_frame < RAM_MAX_PAGES);
+
+  switch (proc_id) {
   case 1:
-    page_table_P1[req.proc_page_id].page_frame = page_frame;
+    page_table_P1[proc_page_id].page_frame = page_frame;
     break;
   case 2:
-    page_table_P2[req.proc_page_id].page_frame = page_frame;
+    page_table_P2[proc_page_id].page_frame = page_frame;
     break;
   case 3:
-    page_table_P3[req.proc_page_id].page_frame = page_frame;
+    page_table_P3[proc_page_id].page_frame = page_frame;
     break;
   case 4:
-    page_table_P4[req.proc_page_id].page_frame = page_frame;
+    page_table_P4[proc_page_id].page_frame = page_frame;
     break;
   default:
-    fprintf(stderr, "Invalid process ID: %d\n", req.proc_id);
+    fprintf(stderr, "Invalid process ID: %d\n", proc_id);
     exit(10);
   }
 }
@@ -313,27 +317,27 @@ static void handle_vmem_io_request(const vmem_io_request_t req) {
 
   // update flags and stats
   increment_rw_count(req);
-  set_referenced(req, true);
+  set_referenced(req.proc_id, req.proc_page_id, true);
   if (req.operation == 'W') {
     // page has been modified, so it must be written before being replaced
-    set_modified(req, true);
+    set_modified(req.proc_id, req.proc_page_id, true);
   }
 
   // update pages
   if (!is_in_memory(req) && is_memory_available()) {
     // page fault, but no need to replace
-    int page_frame_id = get_free_memory_index();
+    int page_frame = get_free_memory_index();
 
     // occupy page frame in main memory
-    main_memory[page_frame_id] = true;
-    set_valid(req, true);
-    set_page_frame(req, page_frame_id);
+    main_memory[page_frame] = true;
+    set_valid(req.proc_id, req.proc_page_id, true);
+    set_page_frame(req.proc_id, req.proc_page_id, page_frame);
 
     // update page fault stats
     increment_fault_count(req, false);
 
-    msg("Page fault P%d: %02d %c -> frame %d", req.proc_id, req.proc_page_id,
-        req.operation, page_frame_id);
+    msg("Page fault P%d: %02d -> frame %d (replaced none) (clean)", req.proc_id,
+        req.proc_page_id, page_frame);
   } else if (!is_in_memory(req)) {
     // page fault, replace with selected algorithm
     page_algo_func(req);
@@ -342,7 +346,7 @@ static void handle_vmem_io_request(const vmem_io_request_t req) {
 
 // handle page fault according to Not Recently Used
 static void page_algo_NRU(const vmem_io_request_t req) {
-  // todo
+  // TODO: implement
 }
 
 int main(int argc, char **argv) {
@@ -538,7 +542,9 @@ int main(int argc, char **argv) {
     dmsg("vmem_sim finished round %d", i);
   }
 
-  // TODO: print results
+  msg("--- Simulation finished ---");
+
+  // TODO: print result statistics, dump process tables
 
   // cleanup
   close(pipe_P1[PIPE_READ]);

@@ -1,3 +1,18 @@
+/*
+ * Exit code table
+ * 00 - ok
+ * 01 - pipe create error
+ * 02 - sem create error
+ * 03 - invalid arg count
+ * 04 - invalid algorithm arg
+ * 05 - fork error
+ * 06 - file error
+ * 07 - pagelist read error
+ * 08 - pipe write error
+ * 09 - pipe read error
+ * 10 - invalid process ID
+ */
+
 #pragma once
 
 // enable debug output
@@ -68,6 +83,6 @@ typedef struct {
   // statistics
   int read_count;           // amount of R requests to this page
   int write_count;          // amount of W requests to this page
-  int page_fault_count;     // amount of total page faults to this page
-  int modified_fault_count; // amount of dirty page faults to this page
+  int page_fault_count;     // amount of total page faults caused by this page
+  int modified_fault_count; // amount of dirty page faults caused by this page
 } page_table_entry_t;
