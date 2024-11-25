@@ -120,3 +120,20 @@ int dequeue(queue_t *q) {
 
   return value;
 }
+
+void queue_to_str(queue_t *q, char *buffer, size_t buffer_size) {
+  node_t *current = q->front;
+  int first = 1;
+  size_t offset = 0;
+
+  while (current != NULL && offset < buffer_size) {
+    if (!first) {
+      offset += snprintf(buffer + offset, buffer_size - offset, ", ");
+    }
+
+    offset +=
+        snprintf(buffer + offset, buffer_size - offset, "%d", current->data);
+    first = 0;
+    current = current->next;
+  }
+}

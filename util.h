@@ -1,6 +1,7 @@
 #pragma once
 
 #include "types.h"
+#include <stdlib.h>
 
 // unbuffered printf + timestamp, includes newline
 void msg(const char *format, ...);
@@ -19,3 +20,7 @@ void enqueue(queue_t *q, int value);
 
 // dequeue int
 int dequeue(queue_t *q);
+
+// print queue contents to a string buffer,
+// format: int1, int2, int3.. (no newline, no leading/trailing comma)
+void queue_to_str(queue_t *q, char *buffer, size_t buffer_size);

@@ -25,6 +25,11 @@ static page_table_entry_t page_table_P1[PROC_MAX_PAGES];
 static page_table_entry_t page_table_P2[PROC_MAX_PAGES];
 static page_table_entry_t page_table_P3[PROC_MAX_PAGES];
 static page_table_entry_t page_table_P4[PROC_MAX_PAGES];
+// process page queues for Second Chance
+static queue_t *page_queue_P1;
+static queue_t *page_queue_P2;
+static queue_t *page_queue_P3;
+static queue_t *page_queue_P4;
 
 // clears the reference bits in each process' page table
 static inline void clear_ref_bits(void) {
@@ -36,8 +41,8 @@ static inline void clear_ref_bits(void) {
   }
 }
 
-// initialize values for the process' page tables
-static void init_page_tables(void) {
+// initialize values for the process' page tables and other data structures
+static void init_page_data(void) {
   for (int i = 0; i < PROC_MAX_PAGES; i++) {
     page_table_P1[i].page_id = i;
     page_table_P2[i].page_id = i;
@@ -73,6 +78,13 @@ static void init_page_tables(void) {
     page_table_P2[i].modified_fault_count = 0;
     page_table_P3[i].modified_fault_count = 0;
     page_table_P4[i].modified_fault_count = 0;
+
+    if (algorithm == ALGO_2ndC) {
+      page_queue_P1 = create_queue();
+      page_queue_P2 = create_queue();
+      page_queue_P3 = create_queue();
+      page_queue_P4 = create_queue();
+    }
   }
 }
 
@@ -406,6 +418,53 @@ static int get_page_to_swap_NRU(int proc_id) {
   return -1;
 }
 
+// enqueue a page to the 2ndC page queue of the specified process
+static inline void enqueue_page(int proc_id, int proc_page_id) {
+  switch (proc_id) {
+  case 1:
+    enqueue(page_queue_P1, proc_page_id);
+    break;
+  case 2:
+    enqueue(page_queue_P2, proc_page_id);
+    break;
+  case 3:
+    enqueue(page_queue_P3, proc_page_id);
+    break;
+  case 4:
+    enqueue(page_queue_P4, proc_page_id);
+    break;
+  default:
+    fprintf(stderr, "Invalid process ID: %d\n", proc_id);
+    exit(10);
+  }
+}
+
+// dequeue a page from the 2ndC page queue of the specified process
+static inline int dequeue_page(int proc_id) {
+  int proc_page_id = -1;
+
+  switch (proc_id) {
+  case 1:
+    proc_page_id = dequeue(page_queue_P1);
+    break;
+  case 2:
+    proc_page_id = dequeue(page_queue_P2);
+    break;
+  case 3:
+    proc_page_id = dequeue(page_queue_P3);
+    break;
+  case 4:
+    proc_page_id = dequeue(page_queue_P4);
+    break;
+  default:
+    fprintf(stderr, "Invalid process ID: %d\n", proc_id);
+    exit(10);
+  }
+
+  assert(proc_page_id != -1); // 2ndC queue should never be empty
+  return proc_page_id;
+}
+
 // handle page fault according to Not Recently Used
 static void page_algo_NRU(const vmem_io_request_t req) {
   const int swap_page = get_page_to_swap_NRU(req.proc_id);
@@ -459,6 +518,7 @@ static void handle_vmem_io_request(const vmem_io_request_t req) {
   // update pages
   if (!is_in_memory(req) && is_memory_available()) {
     // page fault, but no need to replace
+
     int page_frame = get_free_memory_index();
 
     // occupy page frame in main memory
@@ -468,6 +528,11 @@ static void handle_vmem_io_request(const vmem_io_request_t req) {
 
     // update page fault stats
     increment_fault_count(req, false);
+
+    if (algorithm == ALGO_2ndC) {
+      // enqueue new page
+      enqueue_page(req.proc_id, req.proc_page_id);
+    }
 
     msg("Page fault P%d: %02d -> frame %02d (replaced none) (clean)",
         req.proc_id, req.proc_page_id, page_frame);
@@ -654,7 +719,7 @@ int main(int argc, char **argv) {
   close(pipe_P3[PIPE_WRITE]);
   close(pipe_P4[PIPE_WRITE]);
 
-  init_page_tables();
+  init_page_data();
 
   if (algorithm == ALGO_WS) {
     msg("--- Simulating %d rounds using %s with k=%d ---", num_rounds,
@@ -747,6 +812,12 @@ int main(int argc, char **argv) {
   unsetenv("PIPE_P4_READ");
   unsetenv("PIPE_P4_WRITE");
   unsetenv("NUM_ROUNDS");
+  if (algorithm == ALGO_2ndC) {
+    free_queue(page_queue_P1);
+    free_queue(page_queue_P2);
+    free_queue(page_queue_P3);
+    free_queue(page_queue_P4);
+  }
 
   dmsg("vmem_sim finished");
 

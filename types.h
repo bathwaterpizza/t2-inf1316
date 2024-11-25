@@ -68,7 +68,7 @@ typedef void (*page_algo_func_t)(const vmem_io_request_t);
 typedef unsigned char page_flags_t;
 
 // process page table entry
-// NOTE: each value must be initialized in init_page_tables()
+// NOTE: each value must be initialized in init_page_data()
 typedef struct {
   // page table data
   int page_id;        // 0-31 page ID
@@ -88,9 +88,9 @@ typedef struct {
 } page_table_entry_t;
 
 // queue node
-typedef struct node_t {
+typedef struct node {
   int data;
-  struct node_t *next;
+  struct node *next;
 } node_t;
 
 // queue
