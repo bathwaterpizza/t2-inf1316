@@ -39,7 +39,7 @@
 #define RAM_MAX_PAGES 16
 
 // how often should the R bits be cleared, as well as aging shifted, in rounds
-#define REF_CLEAR_INTERVAL 3
+#define REF_CLEAR_INTERVAL 8
 // page flags bits
 #define PAGE_VALID_BIT 0b00000001
 #define PAGE_REFERENCED_BIT 0b00000010

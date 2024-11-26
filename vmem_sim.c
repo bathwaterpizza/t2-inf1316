@@ -12,7 +12,7 @@
 
 // selected page replacement algorithm
 static page_algo_t algorithm;
-// function pointer to the selected page replacement algorithm
+// pointer to the selected page replacement algorithm's function
 static page_algo_func_t page_algo_func;
 // working set window parameter
 static int k_param;
@@ -377,6 +377,31 @@ static inline int get_page_frame(const int proc_id, const int proc_page_id) {
   }
 }
 
+// set the age bits vector of the requested page
+static inline void set_age(const int proc_id, const int proc_page_id,
+                           page_age_t age) {
+  assert(algorithm == ALGO_LRU);
+
+  switch (proc_id) {
+  case 1:
+    page_table_P1[proc_page_id].age = age;
+    break;
+  case 2:
+    page_table_P2[proc_page_id].age = age;
+    break;
+  case 3:
+    page_table_P3[proc_page_id].age = age;
+    break;
+  case 4:
+    page_table_P4[proc_page_id].age = age;
+    break;
+  default:
+    fprintf(stderr, "Invalid process ID: %d\n", proc_id);
+    exit(10);
+  }
+}
+
+// get the age bits vector of the requested page
 static inline page_age_t get_age(const int proc_id, const int proc_page_id) {
   assert(algorithm == ALGO_LRU);
 
@@ -395,18 +420,19 @@ static inline page_age_t get_age(const int proc_id, const int proc_page_id) {
   }
 }
 
-// shifts the aging bits in each process' page table, simulating a clock tick
+// shifts the aging bits in each process' page table, simulating a clock tick,
+// then sets the process' age MSB according to its reference bit
 static inline void shift_aging_bits(void) {
   assert(algorithm == ALGO_LRU);
 
   for (int i = 0; i < PROC_MAX_PAGES; i++) {
-    // shift aging bits
+    // shift age bits
     page_table_P1[i].age >>= 1;
     page_table_P2[i].age >>= 1;
     page_table_P3[i].age >>= 1;
     page_table_P4[i].age >>= 1;
 
-    // set MSBs according to reference bits
+    // set MSB according to reference bit
     if (get_referenced(1, i))
       page_table_P1[i].age |= 0b10000000;
     if (get_referenced(2, i))
@@ -437,7 +463,7 @@ static int get_free_memory_index(void) {
 
 // get ID of page to swap out of memory according to Not Recently Used,
 // -1 if not found
-static int get_page_to_swap_NRU(const int proc_id) {
+static int get_lowest_category_page_NRU(const int proc_id) {
   // search for a page to replace according to NRU priority
   for (int i = 0; i < PROC_MAX_PAGES; i++) {
     if (get_valid(proc_id, i) && !get_referenced(proc_id, i) &&
@@ -466,6 +492,25 @@ static int get_page_to_swap_NRU(const int proc_id) {
 
   // no page found, shouldn't happen
   return -1;
+}
+
+// get the oldest page in memory for the specified process using their age bits
+static int get_oldest_page_LRU(const int proc_id) {
+  int oldest_page = -1;
+  // the lowest age actually represents the oldest page in memory
+  page_age_t lowest_age = 0xFF;
+
+  // find valid page with lowest age
+  for (int i = 0; i < PROC_MAX_PAGES; i++) {
+    page_age_t age = get_age(proc_id, i);
+
+    if (get_valid(proc_id, i) && age < lowest_age) {
+      oldest_page = i;
+      lowest_age = age;
+    }
+  }
+
+  return oldest_page;
 }
 
 // enqueue a page to the 2ndC page queue of the specified process
@@ -517,7 +562,7 @@ static inline int dequeue_page(const int proc_id) {
 
 // handle page fault according to Not Recently Used
 static void page_algo_NRU(const vmem_io_request_t req) {
-  const int swap_page = get_page_to_swap_NRU(req.proc_id);
+  const int swap_page = get_lowest_category_page_NRU(req.proc_id);
   assert(swap_page != -1); // there should always be a page to swap
   const int swap_frame = get_page_frame(req.proc_id, swap_page);
   assert(swap_frame != -1); // page to swap should be in memory
@@ -591,7 +636,39 @@ static void page_algo_2ndC(const vmem_io_request_t req) {
 
 // handle page fault according to LRU (Aging)
 static void page_algo_LRU(const vmem_io_request_t req) {
-  // todo
+  int oldest_page = get_oldest_page_LRU(req.proc_id);
+  assert(oldest_page != -1); // there should be an oldest page
+  int oldest_frame = get_page_frame(req.proc_id, oldest_page);
+  assert(oldest_frame != -1); // oldest page should be in memory
+
+  // check if we are swapping a modified page
+  if (get_modified(req.proc_id, oldest_page)) {
+    // dirty
+    increment_fault_count(req, true);
+    msg("Page fault P%d: %02d -> frame %02d (replaced %02d) (dirty)",
+        req.proc_id, req.proc_page_id, oldest_frame, oldest_page);
+  } else {
+    // clean
+    increment_fault_count(req, false);
+    msg("Page fault P%d: %02d -> frame %02d (replaced %02d) (clean)",
+        req.proc_id, req.proc_page_id, oldest_frame, oldest_page);
+  }
+
+  // update page frames
+  set_page_frame(req.proc_id, req.proc_page_id, oldest_frame);
+  set_page_frame(req.proc_id, oldest_page, -1);
+
+  // update flag bits
+  set_valid(req.proc_id, req.proc_page_id, true);
+  set_valid(req.proc_id, oldest_page, false);
+  set_referenced(req.proc_id, oldest_page, false);
+  set_modified(req.proc_id, oldest_page, false);
+  set_age(req.proc_id, oldest_page, 0); // reset age
+}
+
+// handle page fault according to Working Set (k_param)
+static void page_algo_WS(const vmem_io_request_t req) {
+  // TODO: working set algo
 }
 
 // handle memory io request, checking if a page fault is necessary and
@@ -713,12 +790,10 @@ int main(int argc, char **argv) {
     page_algo_func = page_algo_2ndC;
   } else if (strcasecmp(argv[2], "lru") == 0) {
     algorithm = ALGO_LRU;
-
-    // TODO: set function pointer
+    page_algo_func = page_algo_LRU;
   } else if (strcasecmp(argv[2], "ws") == 0) {
     algorithm = ALGO_WS;
-
-    // TODO: set function pointer
+    page_algo_func = page_algo_WS;
   } else {
     fprintf(stderr, "Invalid page algorithm: %s\n", argv[2]);
     fprintf(stderr, "Available algorithms: NRU, 2ndC, LRU, WS\n");
