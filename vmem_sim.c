@@ -894,11 +894,12 @@ int main(int argc, char **argv) {
   init_page_data();
 
   if (algorithm == ALGO_WS) {
-    msg("--- Simulating %d rounds using %s with k=%d ---", num_rounds,
-        PAGE_ALGO_STR[algorithm], k_param);
+    msg("--- Simulating %d rounds using %s with k=%d, clear/shift every %d "
+        "rounds ---",
+        num_rounds, PAGE_ALGO_STR[algorithm], k_param, REF_CLEAR_INTERVAL);
   } else {
-    msg("--- Simulating %d rounds using %s ---", num_rounds,
-        PAGE_ALGO_STR[algorithm]);
+    msg("--- Simulating %d rounds using %s, clear/shift every %d rounds ---",
+        num_rounds, PAGE_ALGO_STR[algorithm], REF_CLEAR_INTERVAL);
   }
 
   // track elapsed time
@@ -964,8 +965,8 @@ int main(int argc, char **argv) {
 
   // print results
   clock_gettime(CLOCK_MONOTONIC, &end);
-  double elapsed_time_ms = // elapsed time in seconds
-      (end.tv_sec - start.tv_sec) + (end.tv_nsec - start.tv_nsec) / 1e6;
+  double elapsed_time_ms = (end.tv_sec - start.tv_sec) * 1000.0 +
+                           (end.tv_nsec - start.tv_nsec) / 1e6;
   msg("--- Simulation finished after %dms ---", (int)(elapsed_time_ms));
 
   print_stats();
