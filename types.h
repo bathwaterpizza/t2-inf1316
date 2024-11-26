@@ -38,8 +38,8 @@
 // amount of pages the simulated physical memory has
 #define RAM_MAX_PAGES 16
 
-// how often should page entries' referenced bit be cleared, in rounds
-#define REF_BITS_CLEAR_INTERVAL 3
+// how often should the R bits be cleared, as well as aging shifted, in rounds
+#define REF_CLEAR_INTERVAL 3
 // page flags bits
 #define PAGE_VALID_BIT 0b00000001
 #define PAGE_REFERENCED_BIT 0b00000010
@@ -64,8 +64,10 @@ typedef struct {
 // function pointer type for page replacement algorithms
 typedef void (*page_algo_func_t)(const vmem_io_request_t);
 
-// page flags
+// page flags bits
 typedef unsigned char page_flags_t;
+// page age bits for LRU
+typedef unsigned char page_age_t;
 
 // process page table entry
 // NOTE: each value must be initialized in init_page_data()
@@ -74,10 +76,11 @@ typedef struct {
   int page_id;        // 0-31 page ID
   page_flags_t flags; // page flags
   /*
-   * Bit 0b00000001: Valid (page is in main memory)
-   * Bit 0b00000010: Referenced (page has been read/written recently)
-   * Bit 0b00000100: Modified (page has been written to, "dirty")
+   * Bit 0b00000001: Valid      (page is in main memory)
+   * Bit 0b00000010: Referenced (page has been accessed recently)
+   * Bit 0b00000100: Modified   (page has been written to, "dirty")
    */
+  page_age_t age; // page age bit vector for LRU
   int page_frame; // page index in main memory, -1 if not in memory
 
   // statistics

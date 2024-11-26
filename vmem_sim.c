@@ -33,6 +33,8 @@ static queue_t *page_queue_P4;
 
 // clears the reference bits in each process' page table
 static inline void clear_ref_bits(void) {
+  assert(algorithm != ALGO_2ndC);
+
   for (int i = 0; i < PROC_MAX_PAGES; i++) {
     page_table_P1[i].flags &= ~PAGE_REFERENCED_BIT;
     page_table_P2[i].flags &= ~PAGE_REFERENCED_BIT;
@@ -53,6 +55,13 @@ static void init_page_data(void) {
     page_table_P2[i].flags = 0;
     page_table_P3[i].flags = 0;
     page_table_P4[i].flags = 0;
+
+    if (algorithm == ALGO_LRU) {
+      page_table_P1[i].age = 0;
+      page_table_P2[i].age = 0;
+      page_table_P3[i].age = 0;
+      page_table_P4[i].age = 0;
+    }
 
     page_table_P1[i].page_frame = -1;
     page_table_P2[i].page_frame = -1;
@@ -368,6 +377,47 @@ static inline int get_page_frame(const int proc_id, const int proc_page_id) {
   }
 }
 
+static inline page_age_t get_age(const int proc_id, const int proc_page_id) {
+  assert(algorithm == ALGO_LRU);
+
+  switch (proc_id) {
+  case 1:
+    return page_table_P1[proc_page_id].age;
+  case 2:
+    return page_table_P2[proc_page_id].age;
+  case 3:
+    return page_table_P3[proc_page_id].age;
+  case 4:
+    return page_table_P4[proc_page_id].age;
+  default:
+    fprintf(stderr, "Invalid process ID: %d\n", proc_id);
+    exit(10);
+  }
+}
+
+// shifts the aging bits in each process' page table, simulating a clock tick
+static inline void shift_aging_bits(void) {
+  assert(algorithm == ALGO_LRU);
+
+  for (int i = 0; i < PROC_MAX_PAGES; i++) {
+    // shift aging bits
+    page_table_P1[i].age >>= 1;
+    page_table_P2[i].age >>= 1;
+    page_table_P3[i].age >>= 1;
+    page_table_P4[i].age >>= 1;
+
+    // set MSBs according to reference bits
+    if (get_referenced(1, i))
+      page_table_P1[i].age |= 0b10000000;
+    if (get_referenced(2, i))
+      page_table_P2[i].age |= 0b10000000;
+    if (get_referenced(3, i))
+      page_table_P3[i].age |= 0b10000000;
+    if (get_referenced(4, i))
+      page_table_P4[i].age |= 0b10000000;
+  }
+}
+
 // get the index of the first free page frame from main memory
 static int get_free_memory_index(void) {
   int free_memory = -1;
@@ -537,6 +587,11 @@ static void page_algo_2ndC(const vmem_io_request_t req) {
   set_valid(req.proc_id, req.proc_page_id, true);
   set_valid(req.proc_id, oldest_page, false);
   set_modified(req.proc_id, oldest_page, false);
+}
+
+// handle page fault according to LRU (Aging)
+static void page_algo_LRU(const vmem_io_request_t req) {
+  // todo
 }
 
 // handle memory io request, checking if a page fault is necessary and
@@ -817,9 +872,17 @@ int main(int argc, char **argv) {
     }
     handle_vmem_io_request(req);
 
-    // periodically clear reference bits
-    if (i % REF_BITS_CLEAR_INTERVAL == 0)
-      clear_ref_bits();
+    // periodically shift aging and clear reference bits
+    if (i % REF_CLEAR_INTERVAL == 0) {
+      if (algorithm == ALGO_LRU) {
+        // shift aging bits when using LRU (Aging)
+        shift_aging_bits();
+      }
+      if (algorithm != ALGO_2ndC) {
+        // clear reference bits when not using Second Chance
+        clear_ref_bits();
+      }
+    }
 
     dmsg("vmem_sim finished round %d", i);
   }
