@@ -37,7 +37,10 @@ static set_t *page_wset_P3;
 static set_t *page_wset_P4;
 // global clock time for Working Set(k) page age comparison,
 // incremented every round
-static int clock_counter = 0;
+static int clock_counter;
+// whether we've checked that running WS(k) for the given k_param is possible,
+// once the main memory is fully occupied
+static bool wset_check_performed;
 
 // clears the reference bits in each process' page table
 static inline void clear_ref_bits(void) {
@@ -79,6 +82,9 @@ static void init_page_data(void) {
     }
 
     if (algorithm == ALGO_WS) {
+      wset_check_performed = false;
+      clock_counter = 0;
+
       page_table_P1[i].age_clock = 0;
       page_table_P2[i].age_clock = 0;
       page_table_P3[i].age_clock = 0;
@@ -735,6 +741,29 @@ static void page_algo_WS(const vmem_io_request_t req) {
   // TODO: working set algo
 }
 
+// get the minimum number of page frames that a process has occupied,
+// called once per execution to check whether Working Set(k) can be run
+static int get_min_page_frames(void) {
+  int min_page_frames = RAM_MAX_PAGES;
+
+  for (int proc_id = 1; proc_id <= 4; proc_id++) {
+    // count the number of pages that are in memory for each process
+    int page_frames = 0;
+
+    for (int j = 0; j < PROC_MAX_PAGES; j++) {
+      if (get_valid(proc_id, j))
+        page_frames++;
+    }
+
+    if (page_frames < min_page_frames) {
+      min_page_frames = page_frames;
+    }
+  }
+
+  assert(min_page_frames != RAM_MAX_PAGES); // min frames should have changed
+  return min_page_frames;
+}
+
 // handle memory io request, checking if a page fault is necessary and
 // updating stats as needed
 static void handle_vmem_io_request(const vmem_io_request_t req) {
@@ -746,6 +775,8 @@ static void handle_vmem_io_request(const vmem_io_request_t req) {
   dmsg("vmem_sim got P%d: %02d %c", req.proc_id, req.proc_page_id,
        req.operation);
 
+  // TODO: working set check thing after main memory is full, once
+
   // update flags and stats
   increment_rw_count(req);
   set_referenced(req.proc_id, req.proc_page_id, true);
@@ -754,9 +785,29 @@ static void handle_vmem_io_request(const vmem_io_request_t req) {
     set_modified(req.proc_id, req.proc_page_id, true);
   }
 
-  // update pages
+  if (algorithm == ALGO_WS) {
+    if (!wset_check_performed && !is_memory_available()) {
+      // once main memory is full, check if we can run WS(k) for the given
+      // k_param. k_param must be less than or equal to the minimum number of
+      // page frames that a process has occupied
+      if (k_param > get_min_page_frames()) {
+        fprintf(stderr,
+                "Error: k_param=%d is too large for this pagelist's memory "
+                "distribution\n",
+                k_param);
+        exit(11);
+      }
+
+      wset_check_performed = true;
+    }
+
+    // update age clock
+    set_age_clock(req.proc_id, req.proc_page_id, clock_counter);
+  }
+
+  // check if a page fault occurred
   if (!is_in_memory(req) && is_memory_available()) {
-    // page fault, but no need to replace
+    // page fault, but no need to replace a page
 
     int page_frame = get_free_memory_index();
 
@@ -776,7 +827,8 @@ static void handle_vmem_io_request(const vmem_io_request_t req) {
     msg("Page fault P%d: %02d -> frame %02d (replaced none) (clean)",
         req.proc_id, req.proc_page_id, page_frame);
   } else if (!is_in_memory(req)) {
-    // page fault, replace with selected algorithm
+    // page fault, replace a page (from the same process) with the selected
+    // algorithm
     page_algo_func(req);
   }
 }
