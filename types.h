@@ -11,6 +11,7 @@
  * 08 - pipe write error
  * 09 - pipe read error
  * 10 - invalid process ID
+ * 11 - k_param too large for current pagelist
  */
 
 #pragma once
@@ -24,7 +25,7 @@
 #define PIPE_READ 0
 #define PIPE_WRITE 1
 
-// semaphores to sync
+// semaphores to sync vmem_sim <-> procs_sim pipe communication
 #define SEM_P1_NAME "/sem_P1"
 #define SEM_P2_NAME "/sem_P2"
 #define SEM_P3_NAME "/sem_P3"

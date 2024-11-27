@@ -16,9 +16,7 @@ static page_algo_t algorithm;
 static page_algo_func_t page_algo_func;
 // working set window parameter
 static int k_param;
-// page frames available in main memory.
-// false = available,
-// true = occupied
+// page frames available in main memory. false = available, true = occupied
 static bool main_memory[RAM_MAX_PAGES] = {false};
 // process page tables
 static page_table_entry_t page_table_P1[PROC_MAX_PAGES];
@@ -39,7 +37,7 @@ static set_t *page_wset_P4;
 // incremented every round
 static int clock_counter;
 // whether we've checked that running WS(k) for the given k_param is possible,
-// once the main memory is fully occupied
+// once main memory is fully occupied
 static bool wset_check_performed;
 
 // clears the reference bits in each process' page table
@@ -764,8 +762,8 @@ static int get_min_page_frames(void) {
   return min_page_frames;
 }
 
-// handle memory io request, checking if a page fault is necessary and
-// updating stats as needed
+// handle memory io request from procs_sim, checking if a page fault is
+// necessary and updating page data structures as needed
 static void handle_vmem_io_request(const vmem_io_request_t req) {
   // validate data coming from procs_sim
   assert(req.proc_id >= 1 && req.proc_id <= 4);
@@ -774,8 +772,6 @@ static void handle_vmem_io_request(const vmem_io_request_t req) {
 
   dmsg("vmem_sim got P%d: %02d %c", req.proc_id, req.proc_page_id,
        req.operation);
-
-  // TODO: working set check thing after main memory is full, once
 
   // update flags and stats
   increment_rw_count(req);
@@ -790,6 +786,8 @@ static void handle_vmem_io_request(const vmem_io_request_t req) {
       // once main memory is full, check if we can run WS(k) for the given
       // k_param. k_param must be less than or equal to the minimum number of
       // page frames that a process has occupied
+      dmsg("Main memory is now full, checking WS(%d) viability", k_param);
+
       if (k_param > get_min_page_frames()) {
         fprintf(stderr,
                 "Error: k_param=%d is too large for this pagelist's memory "
@@ -1082,7 +1080,7 @@ int main(int argc, char **argv) {
     }
 
     if (algorithm == ALGO_WS) {
-      // update working sets and increment global age clock counter
+      // update working sets and increment global clock counter
       // TODO: update wsets
 
       clock_counter++;
