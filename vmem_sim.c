@@ -30,6 +30,14 @@ static queue_t *page_queue_P1;
 static queue_t *page_queue_P2;
 static queue_t *page_queue_P3;
 static queue_t *page_queue_P4;
+// process working sets for Working Set(k)
+static set_t *page_wset_P1;
+static set_t *page_wset_P2;
+static set_t *page_wset_P3;
+static set_t *page_wset_P4;
+// global clock time for Working Set(k) page age comparison,
+// incremented every round
+static int clock_counter = 0;
 
 // clears the reference bits in each process' page table
 static inline void clear_ref_bits(void) {
@@ -56,11 +64,30 @@ static void init_page_data(void) {
     page_table_P3[i].flags = 0;
     page_table_P4[i].flags = 0;
 
+    if (algorithm == ALGO_2ndC) {
+      page_queue_P1 = create_queue();
+      page_queue_P2 = create_queue();
+      page_queue_P3 = create_queue();
+      page_queue_P4 = create_queue();
+    }
+
     if (algorithm == ALGO_LRU) {
       page_table_P1[i].age_bits = 0;
       page_table_P2[i].age_bits = 0;
       page_table_P3[i].age_bits = 0;
       page_table_P4[i].age_bits = 0;
+    }
+
+    if (algorithm == ALGO_WS) {
+      page_table_P1[i].age_clock = 0;
+      page_table_P2[i].age_clock = 0;
+      page_table_P3[i].age_clock = 0;
+      page_table_P4[i].age_clock = 0;
+
+      page_wset_P1 = create_set();
+      page_wset_P2 = create_set();
+      page_wset_P3 = create_set();
+      page_wset_P4 = create_set();
     }
 
     page_table_P1[i].page_frame = -1;
@@ -87,13 +114,6 @@ static void init_page_data(void) {
     page_table_P2[i].modified_fault_count = 0;
     page_table_P3[i].modified_fault_count = 0;
     page_table_P4[i].modified_fault_count = 0;
-
-    if (algorithm == ALGO_2ndC) {
-      page_queue_P1 = create_queue();
-      page_queue_P2 = create_queue();
-      page_queue_P3 = create_queue();
-      page_queue_P4 = create_queue();
-    }
   }
 }
 
@@ -378,8 +398,8 @@ static inline int get_page_frame(const int proc_id, const int proc_page_id) {
 }
 
 // set the age bits vector of the requested page
-static inline void set_age(const int proc_id, const int proc_page_id,
-                           page_age_bits_t age) {
+static inline void set_age_bits(const int proc_id, const int proc_page_id,
+                                page_age_bits_t age) {
   assert(algorithm == ALGO_LRU);
 
   switch (proc_id) {
@@ -402,8 +422,8 @@ static inline void set_age(const int proc_id, const int proc_page_id,
 }
 
 // get the age bits vector of the requested page
-static inline page_age_bits_t get_age(const int proc_id,
-                                      const int proc_page_id) {
+static inline page_age_bits_t get_age_bits(const int proc_id,
+                                           const int proc_page_id) {
   assert(algorithm == ALGO_LRU);
 
   switch (proc_id) {
@@ -442,6 +462,49 @@ static inline void shift_aging_bits(void) {
       page_table_P3[i].age_bits |= 0b10000000;
     if (get_referenced(4, i))
       page_table_P4[i].age_bits |= 0b10000000;
+  }
+}
+
+// set the age clock of the requested page
+static inline void set_age_clock(const int proc_id, const int proc_page_id,
+                                 const int age_clock) {
+  assert(algorithm == ALGO_WS);
+
+  switch (proc_id) {
+  case 1:
+    page_table_P1[proc_page_id].age_clock = age_clock;
+    break;
+  case 2:
+    page_table_P2[proc_page_id].age_clock = age_clock;
+    break;
+  case 3:
+    page_table_P3[proc_page_id].age_clock = age_clock;
+    break;
+  case 4:
+    page_table_P4[proc_page_id].age_clock = age_clock;
+    break;
+  default:
+    fprintf(stderr, "Invalid process ID: %d\n", proc_id);
+    exit(10);
+  }
+}
+
+// get the age clock of the requested page
+static inline int get_age_clock(const int proc_id, const int proc_page_id) {
+  assert(algorithm == ALGO_WS);
+
+  switch (proc_id) {
+  case 1:
+    return page_table_P1[proc_page_id].age_clock;
+  case 2:
+    return page_table_P2[proc_page_id].age_clock;
+  case 3:
+    return page_table_P3[proc_page_id].age_clock;
+  case 4:
+    return page_table_P4[proc_page_id].age_clock;
+  default:
+    fprintf(stderr, "Invalid process ID: %d\n", proc_id);
+    exit(10);
   }
 }
 
@@ -503,7 +566,7 @@ static int get_oldest_page_LRU(const int proc_id) {
 
   // find valid page with lowest age
   for (int i = 0; i < PROC_MAX_PAGES; i++) {
-    page_age_bits_t age = get_age(proc_id, i);
+    page_age_bits_t age = get_age_bits(proc_id, i);
 
     if (get_valid(proc_id, i) && age < lowest_age) {
       oldest_page = i;
@@ -664,7 +727,7 @@ static void page_algo_LRU(const vmem_io_request_t req) {
   set_valid(req.proc_id, oldest_page, false);
   set_referenced(req.proc_id, oldest_page, false);
   set_modified(req.proc_id, oldest_page, false);
-  set_age(req.proc_id, oldest_page, 0); // reset age
+  set_age_bits(req.proc_id, oldest_page, 0); // reset age
 }
 
 // handle page fault according to Working Set (k_param)
@@ -716,6 +779,11 @@ static void handle_vmem_io_request(const vmem_io_request_t req) {
     // page fault, replace with selected algorithm
     page_algo_func(req);
   }
+}
+
+// print page table entries for each process, excluding statistics
+static void print_page_tables(void) {
+  // TODO: print page table
 }
 
 // print simulation results
@@ -961,6 +1029,13 @@ int main(int argc, char **argv) {
       }
     }
 
+    if (algorithm == ALGO_WS) {
+      // update working sets and increment global age clock counter
+      // TODO: update wsets
+
+      clock_counter++;
+    }
+
     dmsg("vmem_sim finished round %d", i);
   }
 
@@ -970,6 +1045,7 @@ int main(int argc, char **argv) {
                            (end.tv_nsec - start.tv_nsec) / 1e6;
   msg("--- Simulation finished after %dms ---", (int)(elapsed_time_ms));
 
+  print_page_tables();
   print_stats();
 
   // cleanup
@@ -999,6 +1075,12 @@ int main(int argc, char **argv) {
     free_queue(page_queue_P2);
     free_queue(page_queue_P3);
     free_queue(page_queue_P4);
+  }
+  if (algorithm == ALGO_WS) {
+    free_set(page_wset_P1);
+    free_set(page_wset_P2);
+    free_set(page_wset_P3);
+    free_set(page_wset_P4);
   }
 
   dmsg("vmem_sim finished");
