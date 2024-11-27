@@ -103,3 +103,8 @@ typedef struct {
   node_t *front;
   node_t *rear;
 } queue_t;
+
+// set of 0-31 elements
+typedef struct {
+  uint32_t bitmask;
+} set_t;

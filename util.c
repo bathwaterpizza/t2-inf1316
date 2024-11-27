@@ -1,11 +1,16 @@
 #include "util.h"
 #include "types.h"
+#include <assert.h>
 #include <stdarg.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <time.h>
 
 // documentation is provided in util.h
+
+/*
+ * Logging functions
+ */
 
 void msg(const char *format, ...) {
   struct timespec ts;
@@ -60,6 +65,10 @@ void dmsg(const char *format, ...) {
   fflush(stdout);
 #endif
 }
+
+/*
+ * Queue implementation
+ */
 
 queue_t *create_queue(void) {
   queue_t *q = (queue_t *)malloc(sizeof(queue_t));
@@ -135,5 +144,53 @@ void queue_to_str(queue_t *q, char *buffer, size_t buffer_size) {
         snprintf(buffer + offset, buffer_size - offset, "%d", current->data);
     first = 0;
     current = current->next;
+  }
+}
+
+/*
+ * Set implementation
+ */
+
+set_t *create_set(void) {
+  set_t *set = (set_t *)malloc(sizeof(set_t));
+  if (set != NULL) {
+    set->bitmask = 0;
+  }
+  return set;
+}
+
+void free_set(set_t *set) { free(set); }
+
+void set_add(set_t *set, int value) {
+  assert(value >= 0 && value < 32);
+
+  set->bitmask |= (1 << value);
+}
+
+void set_remove(set_t *set, int value) {
+  assert(value >= 0 && value < 32);
+
+  set->bitmask &= ~(1 << value);
+}
+
+bool set_contains(const set_t *set, int value) {
+  assert(value >= 0 && value < 32);
+
+  return (bool)((set->bitmask & (1 << value)) != 0);
+}
+
+void set_to_str(const set_t *set, char *buffer, size_t buffer_size) {
+  int length = 0;
+
+  for (int i = 0; i < 32; i++) {
+    if (set_contains(set, i)) {
+      int written = snprintf(buffer + length, buffer_size - length, "%s%d",
+                             (length > 0 ? ", " : ""), i);
+      if (written < 0 || (size_t)written >= buffer_size - length) {
+        break;
+      }
+
+      length += written;
+    }
   }
 }
