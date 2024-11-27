@@ -67,9 +67,9 @@ typedef struct {
 typedef void (*page_algo_func_t)(const vmem_io_request_t);
 
 // page flags bits
-typedef unsigned char page_flags_t;
+typedef uint8_t page_flags_t;
 // page age bits for LRU
-typedef uint32_t page_age_bits_t;
+typedef uint8_t page_age_bits_t;
 
 // process page table entry
 // NOTE: each value must be initialized in init_page_data()
