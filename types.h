@@ -15,6 +15,8 @@
 
 #pragma once
 
+#include <stdint.h>
+
 // enable debug output
 // #define DEBUG
 
@@ -35,7 +37,7 @@
 #define PAGELIST_P4_FILE "pagelist_P4.txt"
 // amount of pages each process' virtual memory has
 #define PROC_MAX_PAGES 32
-// amount of pages the simulated physical memory has
+// amount of page frames the simulated physical memory has
 #define RAM_MAX_PAGES 16
 
 // how often should the R bits be cleared, as well as aging shifted, in rounds
@@ -67,7 +69,7 @@ typedef void (*page_algo_func_t)(const vmem_io_request_t);
 // page flags bits
 typedef unsigned char page_flags_t;
 // page age bits for LRU
-typedef unsigned char page_age_t;
+typedef uint32_t page_age_bits_t;
 
 // process page table entry
 // NOTE: each value must be initialized in init_page_data()
@@ -80,8 +82,8 @@ typedef struct {
    * Bit 0b00000010: Referenced (page has been accessed recently)
    * Bit 0b00000100: Modified   (page has been written to, "dirty")
    */
-  page_age_t age; // page age bit vector for LRU
-  int page_frame; // page index in main memory, -1 if not in memory
+  page_age_bits_t age_bits; // page age bit vector for LRU
+  int page_frame;           // page index in main memory, -1 if not in memory
 
   // statistics
   int read_count;           // amount of R requests to this page

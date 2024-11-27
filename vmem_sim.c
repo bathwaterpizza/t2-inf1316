@@ -57,10 +57,10 @@ static void init_page_data(void) {
     page_table_P4[i].flags = 0;
 
     if (algorithm == ALGO_LRU) {
-      page_table_P1[i].age = 0;
-      page_table_P2[i].age = 0;
-      page_table_P3[i].age = 0;
-      page_table_P4[i].age = 0;
+      page_table_P1[i].age_bits = 0;
+      page_table_P2[i].age_bits = 0;
+      page_table_P3[i].age_bits = 0;
+      page_table_P4[i].age_bits = 0;
     }
 
     page_table_P1[i].page_frame = -1;
@@ -379,21 +379,21 @@ static inline int get_page_frame(const int proc_id, const int proc_page_id) {
 
 // set the age bits vector of the requested page
 static inline void set_age(const int proc_id, const int proc_page_id,
-                           page_age_t age) {
+                           page_age_bits_t age) {
   assert(algorithm == ALGO_LRU);
 
   switch (proc_id) {
   case 1:
-    page_table_P1[proc_page_id].age = age;
+    page_table_P1[proc_page_id].age_bits = age;
     break;
   case 2:
-    page_table_P2[proc_page_id].age = age;
+    page_table_P2[proc_page_id].age_bits = age;
     break;
   case 3:
-    page_table_P3[proc_page_id].age = age;
+    page_table_P3[proc_page_id].age_bits = age;
     break;
   case 4:
-    page_table_P4[proc_page_id].age = age;
+    page_table_P4[proc_page_id].age_bits = age;
     break;
   default:
     fprintf(stderr, "Invalid process ID: %d\n", proc_id);
@@ -402,18 +402,19 @@ static inline void set_age(const int proc_id, const int proc_page_id,
 }
 
 // get the age bits vector of the requested page
-static inline page_age_t get_age(const int proc_id, const int proc_page_id) {
+static inline page_age_bits_t get_age(const int proc_id,
+                                      const int proc_page_id) {
   assert(algorithm == ALGO_LRU);
 
   switch (proc_id) {
   case 1:
-    return page_table_P1[proc_page_id].age;
+    return page_table_P1[proc_page_id].age_bits;
   case 2:
-    return page_table_P2[proc_page_id].age;
+    return page_table_P2[proc_page_id].age_bits;
   case 3:
-    return page_table_P3[proc_page_id].age;
+    return page_table_P3[proc_page_id].age_bits;
   case 4:
-    return page_table_P4[proc_page_id].age;
+    return page_table_P4[proc_page_id].age_bits;
   default:
     fprintf(stderr, "Invalid process ID: %d\n", proc_id);
     exit(10);
@@ -427,20 +428,20 @@ static inline void shift_aging_bits(void) {
 
   for (int i = 0; i < PROC_MAX_PAGES; i++) {
     // shift age bits
-    page_table_P1[i].age >>= 1;
-    page_table_P2[i].age >>= 1;
-    page_table_P3[i].age >>= 1;
-    page_table_P4[i].age >>= 1;
+    page_table_P1[i].age_bits >>= 1;
+    page_table_P2[i].age_bits >>= 1;
+    page_table_P3[i].age_bits >>= 1;
+    page_table_P4[i].age_bits >>= 1;
 
     // set MSB according to reference bit
     if (get_referenced(1, i))
-      page_table_P1[i].age |= 0b10000000;
+      page_table_P1[i].age_bits |= 0b10000000;
     if (get_referenced(2, i))
-      page_table_P2[i].age |= 0b10000000;
+      page_table_P2[i].age_bits |= 0b10000000;
     if (get_referenced(3, i))
-      page_table_P3[i].age |= 0b10000000;
+      page_table_P3[i].age_bits |= 0b10000000;
     if (get_referenced(4, i))
-      page_table_P4[i].age |= 0b10000000;
+      page_table_P4[i].age_bits |= 0b10000000;
   }
 }
 
@@ -498,11 +499,11 @@ static int get_lowest_category_page_NRU(const int proc_id) {
 static int get_oldest_page_LRU(const int proc_id) {
   int oldest_page = -1;
   // the lowest age actually represents the oldest page in memory
-  page_age_t lowest_age = 0xFF;
+  page_age_bits_t lowest_age = ~0;
 
   // find valid page with lowest age
   for (int i = 0; i < PROC_MAX_PAGES; i++) {
-    page_age_t age = get_age(proc_id, i);
+    page_age_bits_t age = get_age(proc_id, i);
 
     if (get_valid(proc_id, i) && age < lowest_age) {
       oldest_page = i;
