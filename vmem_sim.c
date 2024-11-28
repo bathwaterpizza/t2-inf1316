@@ -16,7 +16,8 @@ static page_algo_t algorithm;
 static page_algo_func_t page_algo_func;
 // working set window parameter
 static int k_param;
-// page frames available in main memory. false = available, true = occupied
+// page frames available in main memory.
+// false = available, true = occupied
 static bool main_memory[RAM_MAX_PAGES] = {false};
 // process page tables
 static page_table_entry_t page_table_P1[PROC_MAX_PAGES];
@@ -583,6 +584,8 @@ static int get_oldest_page_LRU(const int proc_id) {
 
 // enqueue a page to the 2ndC page queue of the specified process
 static inline void enqueue_page(const int proc_id, const int proc_page_id) {
+  assert(algorithm == ALGO_2ndC);
+
   switch (proc_id) {
   case 1:
     enqueue(page_queue_P1, proc_page_id);
@@ -604,6 +607,7 @@ static inline void enqueue_page(const int proc_id, const int proc_page_id) {
 
 // dequeue a page from the 2ndC page queue of the specified process
 static inline int dequeue_page(const int proc_id) {
+  assert(algorithm == ALGO_2ndC);
   int proc_page_id = -1;
 
   switch (proc_id) {
@@ -626,6 +630,104 @@ static inline int dequeue_page(const int proc_id) {
 
   assert(proc_page_id != -1); // 2ndC queue should never be empty
   return proc_page_id;
+}
+
+// add a page to the working set of the specified process
+static inline void set_add_page(const int proc_id, const int proc_page_id) {
+  assert(algorithm == ALGO_WS);
+
+  switch (proc_id) {
+  case 1:
+    set_add(page_wset_P1, proc_page_id);
+    break;
+  case 2:
+    set_add(page_wset_P2, proc_page_id);
+    break;
+  case 3:
+    set_add(page_wset_P3, proc_page_id);
+    break;
+  case 4:
+    set_add(page_wset_P4, proc_page_id);
+    break;
+  default:
+    fprintf(stderr, "Invalid process ID: %d\n", proc_id);
+    exit(10);
+  }
+}
+
+// remove a page from the working set of the specified process
+static inline void set_remove_page(const int proc_id, const int proc_page_id) {
+  assert(algorithm == ALGO_WS);
+
+  switch (proc_id) {
+  case 1:
+    set_remove(page_wset_P1, proc_page_id);
+    break;
+  case 2:
+    set_remove(page_wset_P2, proc_page_id);
+    break;
+  case 3:
+    set_remove(page_wset_P3, proc_page_id);
+    break;
+  case 4:
+    set_remove(page_wset_P4, proc_page_id);
+    break;
+  default:
+    fprintf(stderr, "Invalid process ID: %d\n", proc_id);
+    exit(10);
+  }
+}
+
+// returns whether the working set of proc_id contains the specified page
+static inline bool set_contains_page(const int proc_id,
+                                     const int proc_page_id) {
+  assert(algorithm == ALGO_WS);
+
+  switch (proc_id) {
+  case 1:
+    return set_contains(page_wset_P1, proc_page_id);
+  case 2:
+    return set_contains(page_wset_P2, proc_page_id);
+  case 3:
+    return set_contains(page_wset_P3, proc_page_id);
+  case 4:
+    return set_contains(page_wset_P4, proc_page_id);
+  default:
+    fprintf(stderr, "Invalid process ID: %d\n", proc_id);
+    exit(10);
+  }
+}
+
+// find a valid page that is not in the process' working set
+static int get_page_outside_WS(const int proc_id) {
+  for (int i = 0; i < PROC_MAX_PAGES; i++) {
+    if (get_valid(proc_id, i) && !set_contains_page(proc_id, i)) {
+      return i;
+    }
+  }
+
+  // no page outside WS found, shouldn't happen
+  return -1;
+}
+
+// update the working sets of each process according to the k_param
+static void update_working_sets(void) {
+  assert(algorithm == ALGO_WS);
+
+  // for each process, go through all pages and use their age clock to check if
+  // they should be in the process' working set
+  for (int proc_id = 1; proc_id <= 4; proc_id++) {
+    for (int page_id = 0; page_id < PROC_MAX_PAGES; page_id++) {
+      if (get_valid(proc_id, page_id) &&
+          (clock_counter - k_param) < get_age_clock(proc_id, page_id)) {
+        // if last page ref was less than k_param clock ticks ago, add to wset
+        set_add_page(proc_id, page_id);
+      } else {
+        // otherwise, remove from wset
+        set_remove_page(proc_id, page_id);
+      }
+    }
+  }
 }
 
 // handle page fault according to Not Recently Used
@@ -736,7 +838,39 @@ static void page_algo_LRU(const vmem_io_request_t req) {
 
 // handle page fault according to Working Set (k_param)
 static void page_algo_WS(const vmem_io_request_t req) {
-  // TODO: working set algo
+  // because of our WS(k) viability check in handle_vmem_io_request, we know
+  // that there will always be at least one page outside the working set, but
+  // still in main memory, to be replaced
+  int outside_page = get_page_outside_WS(req.proc_id);
+  assert(outside_page != -1); // there should be a page outside the WS
+  int outside_frame = get_page_frame(req.proc_id, outside_page);
+  assert(outside_frame != -1); // outside page should be in memory
+
+  // check if we are swapping a modified page
+  if (get_modified(req.proc_id, outside_page)) {
+    // dirty
+    increment_fault_count(req, true);
+    msg("Page fault P%d: %02d -> frame %02d (replaced %02d) (dirty)",
+        req.proc_id, req.proc_page_id, outside_frame, outside_page);
+  } else {
+    // clean
+    increment_fault_count(req, false);
+    msg("Page fault P%d: %02d -> frame %02d (replaced %02d) (clean)",
+        req.proc_id, req.proc_page_id, outside_frame, outside_page);
+  }
+
+  // update page frames
+  set_page_frame(req.proc_id, req.proc_page_id, outside_frame);
+  set_page_frame(req.proc_id, outside_page, -1);
+
+  // update flag bits
+  set_valid(req.proc_id, req.proc_page_id, true);
+  set_valid(req.proc_id, outside_page, false);
+  set_referenced(req.proc_id, outside_page, false);
+  set_modified(req.proc_id, outside_page, false);
+
+  // reset age clock
+  set_age_clock(req.proc_id, outside_page, 0);
 }
 
 // get the minimum number of page frames that a process has occupied,
@@ -784,15 +918,15 @@ static void handle_vmem_io_request(const vmem_io_request_t req) {
   if (algorithm == ALGO_WS) {
     if (!wset_check_performed && !is_memory_available()) {
       // once main memory is full, check if we can run WS(k) for the given
-      // k_param. k_param must be less than or equal to the minimum number of
-      // page frames that a process has occupied
+      // k_param. k must be less than the minimum number of page frames
+      // that a process has occupied
       dmsg("Main memory is now full, checking WS(%d) viability", k_param);
 
-      if (k_param > get_min_page_frames()) {
+      if (k_param >= get_min_page_frames()) {
         fprintf(stderr,
-                "Error: k_param=%d is too large for this pagelist's memory "
-                "distribution\n",
-                k_param);
+                "Error: k_param %d is too large for this pagelist's memory "
+                "distribution, minimum frame count is %d\n",
+                k_param, get_min_page_frames());
         exit(11);
       }
 
@@ -913,8 +1047,15 @@ int main(int argc, char **argv) {
   } else if (strcasecmp(argv[2], "ws") == 0) {
     algorithm = ALGO_WS;
     page_algo_func = page_algo_WS;
+
+    if (argc != 4) {
+      fprintf(stderr, "Error: Working Set algorithm requires a k parameter\n");
+      fprintf(stderr,
+              "Usage: ./vmem_sim <num_rounds> <page_algo> [<k_param>]\n");
+      exit(3);
+    }
   } else {
-    fprintf(stderr, "Invalid page algorithm: %s\n", argv[2]);
+    fprintf(stderr, "Error: Invalid page algorithm %s\n", argv[2]);
     fprintf(stderr, "Available algorithms: NRU, 2ndC, LRU, WS\n");
     exit(4);
   }
@@ -1081,8 +1222,7 @@ int main(int argc, char **argv) {
 
     if (algorithm == ALGO_WS) {
       // update working sets and increment global clock counter
-      // TODO: update wsets
-
+      update_working_sets();
       clock_counter++;
     }
 

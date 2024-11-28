@@ -36,10 +36,11 @@
 #define PAGELIST_P2_FILE "pagelist_P2.txt"
 #define PAGELIST_P3_FILE "pagelist_P3.txt"
 #define PAGELIST_P4_FILE "pagelist_P4.txt"
-// amount of pages each process' virtual memory has
+// amount of pages each process' virtual memory has.
+// with our current set implementation, this maxes out at 32 for Working Set(k)
 #define PROC_MAX_PAGES 32
-// amount of page frames the simulated physical memory has
-#define RAM_MAX_PAGES 16
+// amount of total page frames the simulated physical main memory has
+#define RAM_MAX_PAGES (16 * 4)
 
 // how often should the R bits be cleared, as well as aging shifted, in rounds
 #define REF_CLEAR_INTERVAL 4
