@@ -78,21 +78,25 @@ typedef uint8_t page_age_bits_t;
 typedef struct {
   // page entry data
   int page_id;        // 0-31 page ID
+  int page_frame;     // page index in main memory, -1 if not in memory
   page_flags_t flags; // page flags
   /*
    * Bit 0b00000001: Valid      (page is in main memory)
    * Bit 0b00000010: Referenced (page has been accessed recently)
    * Bit 0b00000100: Modified   (page has been written to, "dirty")
    */
+
+  // algorithm-specific data
   page_age_bits_t age_bits; // page age bit vector, LRU
   int age_clock; // latest page access clock time according to clock_counter, WS
-  int page_frame; // page index in main memory, -1 if not in memory
 
   // page entry statistics
   int read_count;           // amount of R requests to this page
   int write_count;          // amount of W requests to this page
   int page_fault_count;     // amount of total page faults caused by this page
   int modified_fault_count; // amount of dirty page faults caused by this page
+  // "caused by this page" meaning that it happened when this page was requested
+  // by a process
 } page_table_entry_t;
 
 // queue node

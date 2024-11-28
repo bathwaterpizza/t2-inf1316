@@ -896,6 +896,44 @@ static int get_min_page_frames(void) {
   return min_page_frames;
 }
 
+// get the queue for the specified process
+static inline queue_t *get_queue(const int proc_id) {
+  assert(algorithm == ALGO_2ndC);
+
+  switch (proc_id) {
+  case 1:
+    return page_queue_P1;
+  case 2:
+    return page_queue_P2;
+  case 3:
+    return page_queue_P3;
+  case 4:
+    return page_queue_P4;
+  default:
+    fprintf(stderr, "Invalid process ID: %d\n", proc_id);
+    exit(10);
+  }
+}
+
+// get the working set for the specified process
+static inline set_t *get_set(const int proc_id) {
+  assert(algorithm == ALGO_WS);
+
+  switch (proc_id) {
+  case 1:
+    return page_wset_P1;
+  case 2:
+    return page_wset_P2;
+  case 3:
+    return page_wset_P3;
+  case 4:
+    return page_wset_P4;
+  default:
+    fprintf(stderr, "Invalid process ID: %d\n", proc_id);
+    exit(10);
+  }
+}
+
 // handle memory io request from procs_sim, checking if a page fault is
 // necessary and updating page data structures as needed
 static void handle_vmem_io_request(const vmem_io_request_t req) {
@@ -965,9 +1003,108 @@ static void handle_vmem_io_request(const vmem_io_request_t req) {
   }
 }
 
-// print page table entries for each process, excluding statistics
+// print the bit vector representation of page_flags_t to a buffer
+static void flags_to_str(page_flags_t flags, char *buffer, size_t buffer_size) {
+  int num_bits = sizeof(page_flags_t) * 8;
+
+  // verify buffer size
+  if (buffer_size < num_bits + 1) { // +1 for null terminator
+    if (buffer_size > 0) {
+      buffer[0] = '\0'; // error, set empty str
+    }
+
+    return;
+  }
+
+  // write bits as chars
+  for (int i = num_bits - 1; i >= 0; i--) {
+    buffer[num_bits - 1 - i] = ((flags >> i) & 1) ? '1' : '0';
+  }
+
+  buffer[num_bits] = '\0';
+}
+
+// print the bit vector representation of page_age_bits_t to a buffer
+static void age_bits_to_str(page_age_bits_t age_bits, char *buffer,
+                            size_t buffer_size) {
+  int num_bits = sizeof(page_age_bits_t) * 8;
+
+  // verify buffer size
+  if (buffer_size < num_bits + 1) { // +1 for null terminator
+    if (buffer_size > 0) {
+      buffer[0] = '\0'; // error, set empty str
+    }
+
+    return;
+  }
+
+  // write bits as chars
+  for (int i = num_bits - 1; i >= 0; i--) {
+    buffer[num_bits - 1 - i] = ((age_bits >> i) & 1) ? '1' : '0';
+  }
+
+  buffer[num_bits] = '\0';
+}
+
+// print page table entries for each process, as well as the relevant data
+// structures, excluding statistics
 static void print_page_tables(void) {
-  // TODO: print page table
+  char buffer[1024];
+  char flags_str[sizeof(page_flags_t) * 8 + 1];
+  char age_bits_str[sizeof(page_age_bits_t) * 8 + 1];
+
+  for (int proc_id = 1; proc_id <= 4; proc_id++) {
+    page_table_entry_t *page_table;
+
+    switch (proc_id) {
+    case 1:
+      page_table = page_table_P1;
+      break;
+    case 2:
+      page_table = page_table_P2;
+      break;
+    case 3:
+      page_table = page_table_P3;
+      break;
+    case 4:
+      page_table = page_table_P4;
+      break;
+    default:
+      fprintf(stderr, "Invalid process ID: %d\n", proc_id);
+      exit(10);
+    }
+
+    // print page table entries
+    msg("--- P%d page table ---", proc_id);
+    for (int i = 0; i < PROC_MAX_PAGES; i++) {
+      flags_to_str(page_table[i].flags, flags_str, sizeof(flags_str));
+
+      if (algorithm == ALGO_LRU) {
+        age_bits_to_str(page_table[i].age_bits, age_bits_str,
+                        sizeof(age_bits_str));
+
+        msg("Page %02d: Frame %02d | Flags %s | Age bits %s",
+            page_table[i].page_id, page_table[i].page_frame, flags_str,
+            age_bits_str);
+      } else if (algorithm == ALGO_WS) {
+        msg("Page %02d: Frame %02d | Flags %s | Age clock %d",
+            page_table[i].page_id, page_table[i].page_frame, flags_str,
+            page_table[i].age_clock);
+      } else {
+        msg("Page %02d: Frame %02d | Flags %s", page_table[i].page_id,
+            page_table[i].page_frame, flags_str);
+      }
+    }
+
+    // print additional data structures
+    if (algorithm == ALGO_2ndC) {
+      queue_to_str(get_queue(proc_id), buffer, sizeof(buffer));
+      msg("Process FIFO Queue: %s", buffer);
+    } else if (algorithm == ALGO_WS) {
+      set_to_str(get_set(proc_id), buffer, sizeof(buffer));
+      msg("Process Working Set: %s", buffer);
+    }
+  }
 }
 
 // print simulation results
