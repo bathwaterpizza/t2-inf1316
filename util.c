@@ -1,5 +1,4 @@
 #include "util.h"
-#include "types.h"
 #include <assert.h>
 #include <stdarg.h>
 #include <stdio.h>
