@@ -40,7 +40,7 @@
 // with our current set implementation, this maxes out at 32 for Working Set(k)
 #define PROC_MAX_PAGES 32
 // amount of total page frames the simulated physical main memory has
-#define RAM_MAX_PAGES (16 * 4)
+#define RAM_MAX_PAGES 16
 
 // how often should the R bits be cleared, as well as aging shifted, in rounds
 #define REF_CLEAR_INTERVAL 4
