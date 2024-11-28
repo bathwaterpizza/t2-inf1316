@@ -1,6 +1,7 @@
 #pragma once
 
 #include "types.h"
+#include "util.h"
 #include <stdbool.h>
 
 // returns whether the requested page is in memory, by checking the valid bit

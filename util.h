@@ -4,6 +4,23 @@
 #include <stdbool.h>
 #include <stdlib.h>
 
+// queue node
+typedef struct node {
+  int data;
+  struct node *next;
+} node_t;
+
+// queue
+typedef struct {
+  node_t *front;
+  node_t *rear;
+} queue_t;
+
+// set of 0-31 elements
+typedef struct {
+  uint32_t bitmask;
+} set_t;
+
 // unbuffered printf + timestamp, includes newline
 void msg(const char *format, ...);
 

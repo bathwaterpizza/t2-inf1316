@@ -98,20 +98,3 @@ typedef struct {
   // "caused by this page" meaning that it happened when this page was requested
   // by a process
 } page_table_entry_t;
-
-// queue node
-typedef struct node {
-  int data;
-  struct node *next;
-} node_t;
-
-// queue
-typedef struct {
-  node_t *front;
-  node_t *rear;
-} queue_t;
-
-// set of 0-31 elements
-typedef struct {
-  uint32_t bitmask;
-} set_t;
