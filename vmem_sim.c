@@ -1075,6 +1075,7 @@ static void print_page_tables(void) {
     }
 
     // print page table entries
+    putchar('\n');
     msg("--- P%d page table ---", proc_id);
     for (int i = 0; i < PROC_MAX_PAGES; i++) {
       flags_to_str(page_table[i].flags, flags_str, sizeof(flags_str));
@@ -1130,23 +1131,25 @@ static void print_stats(void) {
     total_modified_faults += modified_faults;
     total_requests += (reads + writes);
 
+    putchar('\n');
     msg("--- P%d Stats ---", p + 1);
-    msg("Reads: %d", reads);
-    msg("Writes: %d", writes);
-    msg("Page Faults: %d", page_faults);
-    msg("Modified Faults: %d", modified_faults);
+    msg("Reads:             %11d", reads);
+    msg("Writes:            %11d", writes);
+    msg("Page Faults:       %11d", page_faults);
+    msg("Modified Faults:   %11d", modified_faults);
   }
 
   // print combined stats
+  putchar('\n');
   msg("--- Combined Stats ---");
-  msg("Total Reads: %d", total_reads);
-  msg("Total Writes: %d", total_writes);
-  msg("Total Page Faults: %d", total_page_faults);
-  msg("Total Modified Faults: %d", total_modified_faults);
-  msg("Total Requests: %d", total_requests);
-  msg("Page Fault Rate: %.2f%%",
+  msg("Total Reads:       %11d", total_reads);
+  msg("Total Writes:      %11d", total_writes);
+  msg("Total Page Faults: %11d", total_page_faults);
+  msg("Total Modified Faults: %7d", total_modified_faults);
+  msg("Total Requests:    %11d", total_requests);
+  msg("Page Fault Rate:   %10.2f%%",
       (total_page_faults / (double)total_requests) * 100);
-  msg("Dirty Fault Rate: %.2f%%",
+  msg("Dirty Fault Rate:  %10.2f%%",
       (total_modified_faults / (double)total_requests) * 100);
 }
 
