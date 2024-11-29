@@ -68,7 +68,7 @@ Sobre parâmetros, utilizamos um intervalo de clear dos bits de referência de 4
 
 Pelos resultados, o Second Chance aparenta ser o melhor algoritmo para minimizar page faults, entretanto o pior para minimizar dirty faults. Isso é consistente com o fato de que ele não leva páginas modificadas em consideração, ao contrário do Not Recently Used, que utiliza o bit de modified em suas categorias de prioridade de swap, e portanto ficou com a menor taxa de dirty faults.
 
-O LRU ficou bem similar ao WS para k=3, pois os dois utilizam mecanismos similares de aging.
+O LRU ficou bem similar ao WS para k=3, pois os dois utilizam mecanismos similares de aging que não são muito úteis no caso de acessos aleatórios.
 
 ### Acesso com 80% de localidade
 
