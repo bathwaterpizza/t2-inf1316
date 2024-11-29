@@ -522,8 +522,6 @@ set_t *get_set(const int proc_id) {
   }
 }
 
-// get the minimum number of page frames that a process has occupied,
-// called once per execution to check whether Working Set(k) can be run
 int get_min_page_frames(void) {
   int min_page_frames = RAM_MAX_PAGES;
 
@@ -545,7 +543,6 @@ int get_min_page_frames(void) {
   return min_page_frames;
 }
 
-// get the amount of page frames that a process has in memory
 int get_amount_page_frames(const int proc_id) {
   int page_frames = 0;
 

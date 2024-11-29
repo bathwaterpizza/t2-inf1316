@@ -562,6 +562,8 @@ static void print_page_tables(void) {
       set_to_str(get_set(proc_id), buffer, sizeof(buffer));
       msg("Process Working Set: %s", buffer);
     }
+
+    msg("Process page frame count: %d\n", get_amount_page_frames(proc_id));
   }
 }
 

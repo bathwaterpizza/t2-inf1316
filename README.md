@@ -54,6 +54,16 @@ Para o Working Set(k), utilizamos um contador global de clock para comparar a ag
 
 ## Resultados da simulação
 
-Para todos os cenários, utilizamos 1000 rodadas com 0% e 80% de localidade.
+Analisamos 1000 rodadas em todos os cenários, considerando a média de 10 execuções. As listas de páginas utilizadas nos resultados geram uma distribuição homogênea de molduras de páginas entre os processos, como por exemplo 4-4-4-4 para uma RAM de 16 molduras.
 
-### Not Recently Used
+Sobre parâmetros, utilizamos um intervalo de clear dos bits de referência de 4 rounds para o NRU, pois aparenta produzir os melhores resultados. Para o LRU/Aging, a limpeza dos bits de referência e shift do vetor de bits de age é feito ao fim de cada round. Para o Working Set, testamos com k=2 e k=3.
+
+### Acesso aleatório
+
+![Random access page fault rate comparison](pf_rate_random.png)
+
+![Random access dirty page fault rate comparison](dpf_rate_random.png)
+
+### Acesso com 80% de localidade
+
+TODO
