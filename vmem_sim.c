@@ -391,29 +391,6 @@ static void page_algo_WS(const vmem_io_request_t req) {
   set_age_clock(req.proc_id, outside_page, 0);
 }
 
-// get the minimum number of page frames that a process has occupied,
-// called once per execution to check whether Working Set(k) can be run
-static int get_min_page_frames(void) {
-  int min_page_frames = RAM_MAX_PAGES;
-
-  for (int proc_id = 1; proc_id <= 4; proc_id++) {
-    // count the number of pages that are in memory for each process
-    int page_frames = 0;
-
-    for (int j = 0; j < PROC_MAX_PAGES; j++) {
-      if (get_valid(proc_id, j))
-        page_frames++;
-    }
-
-    if (page_frames < min_page_frames) {
-      min_page_frames = page_frames;
-    }
-  }
-
-  assert(min_page_frames != RAM_MAX_PAGES); // min frames should have changed
-  return min_page_frames;
-}
-
 // handle memory io request from procs_sim, checking if a page fault is
 // necessary and updating page data structures as needed
 static void handle_vmem_io_request(const vmem_io_request_t req) {
