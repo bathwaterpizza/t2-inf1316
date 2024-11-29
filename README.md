@@ -54,7 +54,7 @@ Para o Working Set(k), utilizamos um contador global de clock para comparar a ag
 
 ## Resultados da simulação
 
-Analisamos 1000 rodadas em todos os cenários, considerando a média de 10 execuções. As listas de páginas utilizadas nos resultados geram uma distribuição homogênea de molduras de páginas entre os processos, como por exemplo 4-4-4-4 para uma RAM de 16 molduras.
+Analisamos 1000 rodadas em todos os cenários, considerando a média de 10 execuções com listas de páginas distintas. As listas de páginas utilizadas nos resultados geram uma distribuição homogênea de molduras de páginas entre os processos, como por exemplo 4-4-4-4 para uma RAM de 16 molduras.
 
 Sobre parâmetros, utilizamos um intervalo de clear dos bits de referência de 4 rounds para o NRU, pois aparenta produzir os melhores resultados. Para o LRU/Aging, a limpeza dos bits de referência e shift do vetor de bits de age é feito ao fim de cada round. Para o Working Set, testamos com k=2 e k=3.
 
@@ -64,6 +64,16 @@ Sobre parâmetros, utilizamos um intervalo de clear dos bits de referência de 4
 
 ![Random access dirty page fault rate comparison](dpf_rate_random.png)
 
+Pelos resultados, o Second Chance aparenta ser o melhor algoritmo para minimizar page faults, entretanto o pior para minimizar dirty faults. Isso é consistente com o fato de que ele não leva páginas modificadas em consideração, ao contrário do Not Recently Used, que utiliza o bit de modified em suas categorias de prioridade de swap, e portanto ficou com a menor taxa de dirty faults.
+
+O LRU ficou bem similar ao WS para k=3, pois os dois utilizam mecanismos similares de aging.
+
 ### Acesso com 80% de localidade
 
-TODO
+![80% locality access page fault rate comparison](pf_rate_80loc.png)
+
+![80% locality access dirty page fault rate comparison](dpf_rate_80loc.png)
+
+Com localidade simulada, observamos que o LRU/Aging passou a ser o melhor algoritmo em questão de page faults, e o NRU pior. Todos ficaram muito próximos em questão de dirty faults, ao contrário do resultado com acesso aleatório, entretanto o Second Chance permanece o pior em dirty faults.
+
+O Working Set k=3 também permanece melhor que o k=2.
