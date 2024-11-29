@@ -2,7 +2,7 @@
 
 ## Instruções
 
-**OBS:** Nossa definição de round é uma execução inteira do loop principal do simulador, ou seja, um acesso de página para cada processo, totalizando quatro acessos.
+**OBS:** Nossa definição de rodada é uma execução inteira do loop principal do simulador, ou seja, um acesso de página para cada processo, totalizando quatro acessos.
 
 1. Ajustar parâmetros no [types.h](types.h)
 
@@ -49,7 +49,7 @@ Para o LRU/Aging, utilizamos um vetor de bits representando a age, que é atuali
 
 Para o Working Set(k), utilizamos um contador global de clock para comparar a age dos processos, de forma que cada processo em memória guarda o valor do clock em que foi acessado por último. O set em si é uma estrutura de dados reaproveitada da disciplina de EDA.
 
-> É importante notar que não faz sentido aplicar o Working Set(**k**) para um **k** tal que seja maior ou igual a menor quantidade de page frames que algum processo possui, pois assim não haveriam candidados para swap, como o WS inteiro já estaria em memória. Por isso, assim que a memória principal enche, realizamos uma checagem para verificar se faz sentido executar o WS(k) para a distribuição de page frames resultante.
+> É importante notar que não faz sentido aplicar o Working Set(**k**) para um **k** tal que seja maior ou igual a menor quantidade de page frames que algum processo possui, pois assim não haveriam candidados para swap, como o WS inteiro já estaria em memória no caso de **k** páginas distintas. Por isso, assim que a memória principal lota, realizamos uma checagem para verificar se faz sentido executar o WS(k) para a distribuição de page frames resultante.
 
 ## Resultados da simulação
 
