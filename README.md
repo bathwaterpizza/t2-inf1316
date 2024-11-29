@@ -43,7 +43,13 @@ Getters e setters para reduzir a complexidade do código principal, como acabamo
 
 ### vmem_sim
 
-Os algoritmos NRU e 2ndC
+Os algoritmos NRU e 2ndC foram implementados conforme os slides, utilizando categorias de prioridade com os bits das flags e uma fila circular de páginas acessadas, respectivamente. A frequência de limpeza dos bits de referência pode ser ajustada no types.h.
+
+Para o LRU/Aging, utilizamos um vetor de bits representando a age, que é atualizado periodicamente utilizando os bits de referência.
+
+Para o Working Set(k), utilizamos um contador global de clock para comparar a age dos processos, de forma que cada processo em memória guarda o valor do clock em que foi acessado por último. O set em si é uma estrutura de dados reaproveitada da disciplina de EDA.
+
+> É importante notar que não faz sentido aplicar o Working Set(**k**) para um **k** tal que seja maior ou igual a menor quantidade de page frames que algum processo possui, pois assim não haveriam candidados para swap, como o WS inteiro já estaria em memória. Por isso, assim que a memória principal enche, realizamos uma checagem para verificar se faz sentido executar o WS(k) para a distribuição de page frames resultante.
 
 ## Resultados da simulação
 
