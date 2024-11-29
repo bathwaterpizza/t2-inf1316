@@ -11,7 +11,7 @@
 3. Gerar listas de acesso: `./pagelist_gen <num rodadas> <% localidade>`
 
 4. Executar simulação: `./vmem_sim <num rodadas> <algoritmo> [<k>]`
-- Opções de algoritmo: NRU, 2ndC, LRU, WS
+  - Opções de algoritmo: NRU, 2ndC, LRU, WS
 
 ## Arquitetura e artefatos
 
