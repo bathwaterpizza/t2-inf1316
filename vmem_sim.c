@@ -535,22 +535,25 @@ static void print_page_tables(void) {
     putchar('\n');
     msg("--- P%d page table ---", proc_id);
     for (int i = 0; i < PROC_MAX_PAGES; i++) {
+      char modified = get_modified(proc_id, i) ? 'M' : '-';
+      char referenced = get_referenced(proc_id, i) ? 'R' : '-';
+      char valid = get_valid(proc_id, i) ? 'V' : '-';
       flags_to_str(page_table[i].flags, flags_str, sizeof(flags_str));
 
       if (algorithm == ALGO_LRU) {
         age_bits_to_str(page_table[i].age_bits, age_bits_str,
                         sizeof(age_bits_str));
 
-        msg("Page %02d: Frame %02d | Flags %s | Age bits %s",
+        msg("Page %02d: Frame %02d | Flags %s (%c%c%c) | Age bits %s",
             page_table[i].page_id, page_table[i].page_frame, flags_str,
-            age_bits_str);
+            modified, referenced, valid, age_bits_str);
       } else if (algorithm == ALGO_WS) {
-        msg("Page %02d: Frame %02d | Flags %s | Age clock %d",
+        msg("Page %02d: Frame %02d | Flags %s (%c%c%c) | Age clock %d",
             page_table[i].page_id, page_table[i].page_frame, flags_str,
-            page_table[i].age_clock);
+            modified, referenced, valid, page_table[i].age_clock);
       } else {
-        msg("Page %02d: Frame %02d | Flags %s", page_table[i].page_id,
-            page_table[i].page_frame, flags_str);
+        msg("Page %02d: Frame %02d | Flags %s (%c%c%c)", page_table[i].page_id,
+            page_table[i].page_frame, flags_str, modified, referenced, valid);
       }
     }
 
