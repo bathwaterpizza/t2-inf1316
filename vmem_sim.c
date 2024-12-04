@@ -807,16 +807,13 @@ int main(int argc, char **argv) {
     }
     handle_vmem_io_request(req);
 
-    // periodically shift aging and clear reference bits
-    if (i % REF_CLEAR_INTERVAL == 0) {
-      if (algorithm == ALGO_LRU) {
-        // shift aging bits when using LRU (Aging)
-        shift_aging_bits();
-      }
-      if (algorithm != ALGO_2ndC) {
-        // clear reference bits when not using Second Chance
-        clear_ref_bits();
-      }
+    if (algorithm == ALGO_LRU) {
+      // shift aging bits after each round, and clear ref bits
+      shift_aging_bits();
+      clear_ref_bits();
+    } else if (i % REF_CLEAR_INTERVAL == 0 && algorithm != ALGO_2ndC) {
+      // periodically clear reference bits
+      clear_ref_bits();
     }
 
     if (algorithm == ALGO_WS) {
