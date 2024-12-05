@@ -248,6 +248,22 @@ static void update_working_sets(void) {
   }
 }
 
+// increment page fault count considering modified pages
+static inline void increment_fault(const vmem_io_request_t req, const int frame,
+                                   const int page) {
+  if (get_modified(req.proc_id, page)) {
+    // dirty
+    increment_fault_count(req, true);
+    msg("Page fault P%d: %02d -> frame %02d (replaced %02d) (dirty)",
+        req.proc_id, req.proc_page_id, frame, page);
+  } else {
+    // clean
+    increment_fault_count(req, false);
+    msg("Page fault P%d: %02d -> frame %02d (replaced %02d) (clean)",
+        req.proc_id, req.proc_page_id, frame, page);
+  }
+}
+
 // handle page fault according to Not Recently Used
 static void page_algo_NRU(const vmem_io_request_t req) {
   const int swap_page = get_lowest_category_page_NRU(req.proc_id);
@@ -256,17 +272,7 @@ static void page_algo_NRU(const vmem_io_request_t req) {
   assert(swap_frame != -1); // page to swap should be in memory
 
   // check if we are swapping a modified page
-  if (get_modified(req.proc_id, swap_page)) {
-    // dirty
-    increment_fault_count(req, true);
-    msg("Page fault P%d: %02d -> frame %02d (replaced %02d) (dirty)",
-        req.proc_id, req.proc_page_id, swap_frame, swap_page);
-  } else {
-    // clean
-    increment_fault_count(req, false);
-    msg("Page fault P%d: %02d -> frame %02d (replaced %02d) (clean)",
-        req.proc_id, req.proc_page_id, swap_frame, swap_page);
-  }
+  increment_fault(req, swap_frame, swap_page);
 
   // update page frames
   set_page_frame(req.proc_id, req.proc_page_id, swap_frame);
@@ -297,17 +303,7 @@ static void page_algo_2ndC(const vmem_io_request_t req) {
   assert(oldest_frame != -1); // oldest page should be in memory
 
   // check if we are swapping a modified page
-  if (get_modified(req.proc_id, oldest_page)) {
-    // dirty
-    increment_fault_count(req, true);
-    msg("Page fault P%d: %02d -> frame %02d (replaced %02d) (dirty)",
-        req.proc_id, req.proc_page_id, oldest_frame, oldest_page);
-  } else {
-    // clean
-    increment_fault_count(req, false);
-    msg("Page fault P%d: %02d -> frame %02d (replaced %02d) (clean)",
-        req.proc_id, req.proc_page_id, oldest_frame, oldest_page);
-  }
+  increment_fault(req, oldest_frame, oldest_page);
 
   // enqueue newest page
   enqueue_page(req.proc_id, req.proc_page_id);
@@ -330,17 +326,7 @@ static void page_algo_LRU(const vmem_io_request_t req) {
   assert(oldest_frame != -1); // oldest page should be in memory
 
   // check if we are swapping a modified page
-  if (get_modified(req.proc_id, oldest_page)) {
-    // dirty
-    increment_fault_count(req, true);
-    msg("Page fault P%d: %02d -> frame %02d (replaced %02d) (dirty)",
-        req.proc_id, req.proc_page_id, oldest_frame, oldest_page);
-  } else {
-    // clean
-    increment_fault_count(req, false);
-    msg("Page fault P%d: %02d -> frame %02d (replaced %02d) (clean)",
-        req.proc_id, req.proc_page_id, oldest_frame, oldest_page);
-  }
+  increment_fault(req, oldest_frame, oldest_page);
 
   // update page frames
   set_page_frame(req.proc_id, req.proc_page_id, oldest_frame);
@@ -365,17 +351,7 @@ static void page_algo_WS(const vmem_io_request_t req) {
   assert(outside_frame != -1); // outside page should be in memory
 
   // check if we are swapping a modified page
-  if (get_modified(req.proc_id, outside_page)) {
-    // dirty
-    increment_fault_count(req, true);
-    msg("Page fault P%d: %02d -> frame %02d (replaced %02d) (dirty)",
-        req.proc_id, req.proc_page_id, outside_frame, outside_page);
-  } else {
-    // clean
-    increment_fault_count(req, false);
-    msg("Page fault P%d: %02d -> frame %02d (replaced %02d) (clean)",
-        req.proc_id, req.proc_page_id, outside_frame, outside_page);
-  }
+  increment_fault(req, outside_frame, outside_page);
 
   // update page frames
   set_page_frame(req.proc_id, req.proc_page_id, outside_frame);
